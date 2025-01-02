@@ -167,6 +167,8 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode(WINDOW_SIZE)
 
+    start_screen(screen, "Далее =>")
+
     labyrinth = Labyrinth('simple_map.txt', [0, 2], 2)
     hero = Hero((7, 7))
     enemy = Enemy((7, 1))
