@@ -136,6 +136,32 @@ def show_mess(screen, message):
                                               text_w + 20, text_h + 20))
     screen.blit(text, (text_x, text_y))
 
+def start_screen(screen, a):
+    pygame.init()
+    # Установите заголовок окна
+    pygame.display.set_caption("Главное окно игры")
+    # Загрузите изображение фона из папки data
+    background = pygame.image.load('data/background.png')
+    clock = pygame.time.Clock()
+    button_rect = pygame.Rect(300, 400, 200, 50)  # Прямоугольник кнопки
+    button_color = (255, 255, 255)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1 and button_rect.collidepoint(event.pos):
+                    return  # Переход к игровому экрану
+        screen.blit(background, (0, 0))
+        pygame.draw.rect(screen, button_color, button_rect)  # Рисуем кнопку
+        font = pygame.font.Font(None, 36)
+        text = font.render(a, True, (0, 0, 0))
+        text_rect = text.get_rect(center=button_rect.center)
+        screen.blit(text, text_rect)  # Выводим текст на кнопку
+        pygame.display.flip()
+        clock.tick(FPS)
 
 def main():
     pygame.init()
