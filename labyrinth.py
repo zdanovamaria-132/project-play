@@ -1,4 +1,5 @@
 import pygame
+import sys
 
 
 WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 468, 468
