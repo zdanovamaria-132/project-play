@@ -20,12 +20,17 @@ def create_new_window():
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Новое окно")
     background_window2 = pygame.image.load('data/background_window2.png')
+    cursor = pygame.image.load('data/cursor.png')
+    cursor_rect = cursor.get_rect()
+    pygame.mouse.set_visible(False)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+        cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.blit(background_window2, (0, 0))
+        new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
 
