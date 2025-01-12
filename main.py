@@ -145,14 +145,14 @@ def generate_level(level):
     return new_player, x, y
 
 
-def create_level_window():
+def create_level_window(map):
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Уровень")
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
 
-    player, level_x, level_y = generate_level(load_level('level1.txt'))
+    player, level_x, level_y = generate_level(load_level(map))
 
     while True:
         for event in pygame.event.get():
@@ -195,9 +195,9 @@ def create_new_window():
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if level1_button_rect.collidepoint(event.pos):
-                    create_level_window()
+                    create_level_window('level1.txt')
                 elif level2_button_rect.collidepoint(event.pos):
-                    create_level_window()
+                    create_level_window('level2.txt')
 
         cursor_rect.topleft = pygame.mouse.get_pos()
 
