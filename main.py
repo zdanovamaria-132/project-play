@@ -306,12 +306,12 @@ class Monster(pygame.sprite.Sprite):
             self.rect = new_rect
 
 
-
 def generate_level(level):
     new_player, x, y = None, None, None
     teleport_points = {}
     win_point = None
     monster = None
+    l_points = None
     for y in range(len(level)):
         for x in range(len(level[y])):
             print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
@@ -319,6 +319,9 @@ def generate_level(level):
                 Tile('empty', x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
+            elif level[y][x] == 'L':
+                Tile('empty', x, y)
+                l_points = (x, y)
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Player(x, y)
@@ -337,7 +340,7 @@ def generate_level(level):
                 all_sprites.add(monster)  # Добавляем монстра в группу спрайтов
                 print("Монстр добавлен в группу спрайтов")
     print(f"Монстр: {monster}")
-    return new_player, teleport_points, win_point, monster
+    return new_player, teleport_points, win_point, monster, l_points
 
 
 def create_level_window(map):
@@ -347,7 +350,7 @@ def create_level_window(map):
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
 
-    player, teleport_points, win_point, monster = generate_level(load_level(map))
+    player, teleport_points, win_point, monster, l_point = generate_level(load_level(map))
 
     font = pygame.font.Font(None, 72)
     win_text = font.render("You Won", True, (255, 0, 0))
@@ -386,6 +389,16 @@ def create_level_window(map):
 
         # Логика проигрыша
         if monster and player.rect.colliderect(monster.rect):
+            new_screen.fill((0, 0, 0))
+            new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
+                                        new_screen.get_height() // 2 - lose_text.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
+        if player.rect.colliderect(
+                pygame.Rect(l_point[0] * tile_width, l_point[1] * tile_height, tile_width, tile_height)):
             new_screen.fill((0, 0, 0))
             new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
                                         new_screen.get_height() // 2 - lose_text.get_height() // 2))
