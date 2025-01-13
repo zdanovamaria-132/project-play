@@ -76,6 +76,8 @@ class Player(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
         if self.move_delay == 0:
             new_rect = self.rect.copy()
+            c = load_level('level1.txt')
+            a = c[new_rect.y // 50][new_rect.x // 50]
             if keys[pygame.K_w] or keys[pygame.K_UP]:
                 new_rect.y -= tile_height
                 self.direction = 'up'
@@ -96,6 +98,24 @@ class Player(pygame.sprite.Sprite):
                 self.direction = 'right'
                 self.move_delay = 30
                 print("Движение вправо")
+            elif keys[pygame.K_q] and a == '-':
+                coordinates_p = []
+                # Проходим по каждой строке и ищем символ '+'
+                for row_index, line in enumerate(c):
+                    for col_index, char in enumerate(line):
+                        if char == '+':
+                            coordinates_p.append((row_index, col_index))  # Добавляем координаты в список
+                print(coordinates_p)
+                new_rect.x, new_rect.y = coordinates_p[0][1] * 50, coordinates_p[0][0] * 50
+            elif keys[pygame.K_e] and a == '+':
+                coordinates_m = []
+                # Проходим по каждой строке и ищем символ '-'
+                for row_index, line in enumerate(c):
+                    for col_index, char in enumerate(line):
+                        if char == '-':
+                            coordinates_m.append((row_index, col_index))  # Добавляем координаты в список
+                print(coordinates_m)
+                new_rect.x, new_rect.y = coordinates_m[0][1] * 50, coordinates_m[0][0] * 50
             else:
                 self.direction = 'idle'
 
