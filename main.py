@@ -98,21 +98,22 @@ class Player(pygame.sprite.Sprite):
                 self.direction = 'right'
                 self.move_delay = 30
                 print("Движение вправо")
-            elif keys[pygame.K_q] and a == '-':
+            # телепортация
+            elif keys[pygame.K_q] and a == '1':
                 coordinates_p = []
                 # Проходим по каждой строке и ищем символ '+'
                 for row_index, line in enumerate(c):
                     for col_index, char in enumerate(line):
-                        if char == '+':
+                        if char == '2':
                             coordinates_p.append((row_index, col_index))  # Добавляем координаты в список
                 print(coordinates_p)
                 new_rect.x, new_rect.y = coordinates_p[0][1] * 50, coordinates_p[0][0] * 50
-            elif keys[pygame.K_e] and a == '+':
+            elif keys[pygame.K_e] and a == '2':
                 coordinates_m = []
                 # Проходим по каждой строке и ищем символ '-'
                 for row_index, line in enumerate(c):
                     for col_index, char in enumerate(line):
-                        if char == '-':
+                        if char == '1':
                             coordinates_m.append((row_index, col_index))  # Добавляем координаты в список
                 print(coordinates_m)
                 new_rect.x, new_rect.y = coordinates_m[0][1] * 50, coordinates_m[0][0] * 50
@@ -362,15 +363,15 @@ def create_level_window(map):
         if monster:
             monster.update(player)
 
-        # Логика телепортации
-        if player.rect.colliderect(
-                pygame.Rect(teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height, tile_width,
-                            tile_height)):
-            player.rect.topleft = (teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height)
-        elif player.rect.colliderect(
-                pygame.Rect(teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height, tile_width,
-                            tile_height)):
-            player.rect.topleft = (teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height)
+        # # Логика телепортации
+        # if player.rect.colliderect(
+        #         pygame.Rect(teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height, tile_width,
+        #                     tile_height)):
+        #     player.rect.topleft = (teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height)
+        # elif player.rect.colliderect(
+        #         pygame.Rect(teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height, tile_width,
+        #                     tile_height)):
+        #     player.rect.topleft = (teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height)
 
         # Логика победы
         if player.rect.colliderect(
