@@ -143,18 +143,33 @@ class Player(pygame.sprite.Sprite):
             self.move_delay -= 1
 
 
-def load_level(filename):
-    filename = "data/" + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+class Monster(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites)
+        self.image = pygame.image.load('data/monster.png')
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.speed = 2
+        print(f"Монстр создан на позиции ({pos_x}, {pos_y})")
+
+    def update(self, player):
+        if self.rect.x < player.rect.x:
+            self.rect.x += self.speed
+        elif self.rect.x > player.rect.x:
+            self.rect.x -= self.speed
+        if self.rect.y < player.rect.y:
+            self.rect.y += self.speed
+        elif self.rect.y > player.rect.y:
+            self.rect.y -= self.speed
 
 
 def generate_level(level):
     new_player, x, y = None, None, None
+    teleport_points = {}
+    win_point = None
+    monster = None
     for y in range(len(level)):
         for x in range(len(level[y])):
+            print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
             if level[y][x] == '.':
                 Tile('empty', x, y)
             elif level[y][x] == '#':
@@ -162,7 +177,21 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Player(x, y)
-    return new_player, x, y
+            elif level[y][x] == '1':
+                Tile('empty', x, y)
+                teleport_points['1'] = (x, y)
+            elif level[y][x] == '2':
+                Tile('empty', x, y)
+                teleport_points['2'] = (x, y)
+            elif level[y][x] == '%':
+                Tile('empty', x, y)
+                win_point = (x, y)
+            elif level[y][x] == 'M':
+                Tile('empty', x, y)
+                monster = Monster(x, y)
+                all_sprites.add(monster)  # Добавляем монстра в группу спрайтов
+                print("Монстр добавлен в группу спрайтов")
+    return new_player, teleport_points, win_point, monster
 
 
 def create_level_window(map):
@@ -172,7 +201,11 @@ def create_level_window(map):
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
 
-    player, level_x, level_y = generate_level(load_level(map))
+    player, teleport_points, win_point, monster = generate_level(load_level(map))
+
+    font = pygame.font.Font(None, 72)
+    win_text = font.render("You Won", True, (255, 0, 0))
+    lose_text = font.render("Game Over", True, (255, 0, 0))
 
     while True:
         for event in pygame.event.get():
@@ -181,10 +214,191 @@ def create_level_window(map):
                 sys.exit()
 
         player_group.update()
+        if monster:
+            monster.update(player)
+
+        # Логика телепортации
+        if player.rect.colliderect(
+                pygame.Rect(teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height, tile_width,
+                            tile_height)):
+            player.rect.topleft = (teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height)
+        elif player.rect.colliderect(
+                pygame.Rect(teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height, tile_width,
+                            tile_height)):
+            player.rect.topleft = (teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height)
+
+        # Логика победы
+        if player.rect.colliderect(
+                pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
+            new_screen.fill((0, 0, 0))
+            new_screen.blit(win_text, (new_screen.get_width() // 2 - win_text.get_width() // 2,
+                                       new_screen.get_height() // 2 - win_text.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
+        # Логика проигрыша
+        if monster and player.rect.colliderect(monster.rect):
+            new_screen.fill((0, 0, 0))
+            new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
+                                        new_screen.get_height() // 2 - lose_text.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
         tiles_group.draw(new_screen)
         player_group.draw(new_screen)
+        if monster:
+            new_screen.blit(monster.image, monster.rect.topleft)
+        new_screen.blit(cursor, cursor_rect)
+        pygame.display.flip()
+
+
+def load_level(filename):
+    filename = "data/" + filename
+    with open(filename, 'r', encoding='utf-8') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+    max_width = max(map(len, level_map))
+    print("Загруженная карта уровня:")
+    for line in level_map:
+        print(line)
+    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+
+
+class Monster(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites)
+        self.image = pygame.image.load('data/monster.png')
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.speed = 0.5  # Уменьшите скорость монстра
+        print(f"Монстр создан на позиции ({pos_x}, {pos_y})")
+
+    def update(self, player):
+        new_rect = self.rect.copy()
+        if abs(self.rect.x - player.rect.x) > abs(self.rect.y - player.rect.y):
+            if self.rect.x < player.rect.x:
+                new_rect.x += self.speed
+            elif self.rect.x > player.rect.x:
+                new_rect.x -= self.speed
+        elif abs(self.rect.x - player.rect.x) < abs(self.rect.y - player.rect.y):
+            if self.rect.y < player.rect.y:
+                new_rect.y += self.speed
+            elif self.rect.y > player.rect.y:
+                new_rect.y -= self.speed
+        else:
+            if self.rect.x < player.rect.x:
+                new_rect.x += self.speed
+            elif self.rect.x > player.rect.x:
+                new_rect.x -= self.speed
+            if self.rect.y < player.rect.y:
+                new_rect.y += self.speed
+            elif self.rect.y > player.rect.y:
+                new_rect.y -= self.speed
+
+        # Проверка на столкновение со стенами
+        collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
+        if not collision:
+            self.rect = new_rect
+
+
+
+def generate_level(level):
+    new_player, x, y = None, None, None
+    teleport_points = {}
+    win_point = None
+    monster = None
+    for y in range(len(level)):
+        for x in range(len(level[y])):
+            print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
+            if level[y][x] == '.':
+                Tile('empty', x, y)
+            elif level[y][x] == '#':
+                Tile('wall', x, y)
+            elif level[y][x] == '@':
+                Tile('empty', x, y)
+                new_player = Player(x, y)
+            elif level[y][x] == '1':
+                Tile('empty', x, y)
+                teleport_points['1'] = (x, y)
+            elif level[y][x] == '2':
+                Tile('empty', x, y)
+                teleport_points['2'] = (x, y)
+            elif level[y][x] == '%':
+                Tile('empty', x, y)
+                win_point = (x, y)
+            elif level[y][x] == 'M':
+                Tile('empty', x, y)
+                monster = Monster(x, y)
+                all_sprites.add(monster)  # Добавляем монстра в группу спрайтов
+                print("Монстр добавлен в группу спрайтов")
+    print(f"Монстр: {monster}")
+    return new_player, teleport_points, win_point, monster
+
+
+def create_level_window(map):
+    new_screen = pygame.display.set_mode((750, 750))
+    pygame.display.set_caption("Уровень")
+    cursor = pygame.image.load('data/cursor.png')
+    cursor_rect = cursor.get_rect()
+    pygame.mouse.set_visible(False)
+
+    player, teleport_points, win_point, monster = generate_level(load_level(map))
+
+    font = pygame.font.Font(None, 72)
+    win_text = font.render("You Won", True, (255, 0, 0))
+    lose_text = font.render("Game Over", True, (255, 0, 0))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        player_group.update()
+        if monster:
+            monster.update(player)
+
+        # Логика телепортации
+        if player.rect.colliderect(
+                pygame.Rect(teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height, tile_width,
+                            tile_height)):
+            player.rect.topleft = (teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height)
+        elif player.rect.colliderect(
+                pygame.Rect(teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height, tile_width,
+                            tile_height)):
+            player.rect.topleft = (teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height)
+
+        # Логика победы
+        if player.rect.colliderect(
+                pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
+            new_screen.fill((0, 0, 0))
+            new_screen.blit(win_text, (new_screen.get_width() // 2 - win_text.get_width() // 2,
+                                       new_screen.get_height() // 2 - win_text.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
+        # Логика проигрыша
+        if monster and player.rect.colliderect(monster.rect):
+            new_screen.fill((0, 0, 0))
+            new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
+                                        new_screen.get_height() // 2 - lose_text.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
+        cursor_rect.topleft = pygame.mouse.get_pos()
+        new_screen.fill((200, 200, 200))
+        tiles_group.draw(new_screen)
+        player_group.draw(new_screen)
+        if monster:
+            new_screen.blit(monster.image, monster.rect.topleft)
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
