@@ -302,16 +302,6 @@ def create_level_window(map):
         if monster:
             monster.update(player)
 
-        # # Логика телепортации
-        # if player.rect.colliderect(
-        #         pygame.Rect(teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height, tile_width,
-        #                     tile_height)):
-        #     player.rect.topleft = (teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height)
-        # elif player.rect.colliderect(
-        #         pygame.Rect(teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height, tile_width,
-        #                     tile_height)):
-        #     player.rect.topleft = (teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height)
-
         # Логика победы
         if player.rect.colliderect(
                 pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
