@@ -195,70 +195,6 @@ def generate_level(level):
     return new_player, teleport_points, win_point, monster
 
 
-def create_level_window(map):
-    new_screen = pygame.display.set_mode((750, 750))
-    pygame.display.set_caption("Уровень")
-    cursor = pygame.image.load('data/cursor.png')
-    cursor_rect = cursor.get_rect()
-    pygame.mouse.set_visible(False)
-
-    player, teleport_points, win_point, monster = generate_level(load_level(map))
-
-    font = pygame.font.Font(None, 72)
-    win_text = font.render("You Won", True, (255, 0, 0))
-    lose_text = font.render("Game Over", True, (255, 0, 0))
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-        player_group.update()
-        if monster:
-            monster.update(player)
-
-        # Логика телепортации
-        if player.rect.colliderect(
-                pygame.Rect(teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height, tile_width,
-                            tile_height)):
-            player.rect.topleft = (teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height)
-        elif player.rect.colliderect(
-                pygame.Rect(teleport_points['2'][0] * tile_width, teleport_points['2'][1] * tile_height, tile_width,
-                            tile_height)):
-            player.rect.topleft = (teleport_points['1'][0] * tile_width, teleport_points['1'][1] * tile_height)
-
-        # Логика победы
-        if player.rect.colliderect(
-                pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
-            new_screen.fill((0, 0, 0))
-            new_screen.blit(win_text, (new_screen.get_width() // 2 - win_text.get_width() // 2,
-                                       new_screen.get_height() // 2 - win_text.get_height() // 2))
-            pygame.display.flip()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
-
-        # Логика проигрыша
-        if monster and player.rect.colliderect(monster.rect):
-            new_screen.fill((0, 0, 0))
-            new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
-                                        new_screen.get_height() // 2 - lose_text.get_height() // 2))
-            pygame.display.flip()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
-
-        cursor_rect.topleft = pygame.mouse.get_pos()
-        new_screen.fill((200, 200, 200))
-        tiles_group.draw(new_screen)
-        player_group.draw(new_screen)
-        if monster:
-            new_screen.blit(monster.image, monster.rect.topleft)
-        new_screen.blit(cursor, cursor_rect)
-        pygame.display.flip()
-
-
 def load_level(filename):
     filename = "data/" + filename
     with open(filename, 'r', encoding='utf-8') as mapFile:
@@ -356,11 +292,11 @@ def create_level_window(map):
     win_text = font.render("You Won", True, (255, 0, 0))
     lose_text = font.render("Game Over", True, (255, 0, 0))
 
-    while True:
+    running = True
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                running = False
 
         player_group.update()
         if monster:
@@ -388,16 +324,7 @@ def create_level_window(map):
             sys.exit()
 
         # Логика проигрыша
-        if monster and player.rect.colliderect(monster.rect):
-            new_screen.fill((0, 0, 0))
-            new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
-                                        new_screen.get_height() // 2 - lose_text.get_height() // 2))
-            pygame.display.flip()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
-
-        if player.rect.colliderect(
+        if monster and player.rect.colliderect(monster.rect) or player.rect.colliderect(
                 pygame.Rect(l_point[0] * tile_width, l_point[1] * tile_height, tile_width, tile_height)):
             new_screen.fill((0, 0, 0))
             new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
@@ -406,6 +333,7 @@ def create_level_window(map):
             pygame.time.wait(3000)
             pygame.quit()
             sys.exit()
+
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
@@ -436,11 +364,11 @@ def create_new_window():
     level1_button_rect = pygame.Rect(100, 200, button_image.get_width(), button_image.get_height())
     level2_button_rect = pygame.Rect(100, 320, button_image.get_width(), button_image.get_height())
 
-    while True:
+    running = True
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if level1_button_rect.collidepoint(event.pos):
                     create_level_window('level1.txt')
@@ -461,12 +389,11 @@ def create_new_window():
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
-
-while True:
+running = True
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
                     178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
