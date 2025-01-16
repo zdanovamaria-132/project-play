@@ -106,7 +106,6 @@ class Player(pygame.sprite.Sprite):
                     for col_index, char in enumerate(line):
                         if char == '2':
                             coordinates_p.append((row_index, col_index))  # Добавляем координаты в список
-                print(coordinates_p)
                 new_rect.x, new_rect.y = coordinates_p[0][1] * 50, coordinates_p[0][0] * 50
             elif keys[pygame.K_e] and a == '2':
                 coordinates_m = []
@@ -115,7 +114,6 @@ class Player(pygame.sprite.Sprite):
                     for col_index, char in enumerate(line):
                         if char == '1':
                             coordinates_m.append((row_index, col_index))  # Добавляем координаты в список
-                print(coordinates_m)
                 new_rect.x, new_rect.y = coordinates_m[0][1] * 50, coordinates_m[0][0] * 50
             else:
                 self.direction = 'idle'
@@ -144,65 +142,14 @@ class Player(pygame.sprite.Sprite):
             self.move_delay -= 1
 
 
-class Monster(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y):
-        super().__init__(all_sprites)
-        self.image = pygame.image.load('data/monster.png')
-        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        self.speed = 2
-        print(f"Монстр создан на позиции ({pos_x}, {pos_y})")
-
-    def update(self, player):
-        if self.rect.x < player.rect.x:
-            self.rect.x += self.speed
-        elif self.rect.x > player.rect.x:
-            self.rect.x -= self.speed
-        if self.rect.y < player.rect.y:
-            self.rect.y += self.speed
-        elif self.rect.y > player.rect.y:
-            self.rect.y -= self.speed
-
-
-def generate_level(level):
-    new_player, x, y = None, None, None
-    teleport_points = {}
-    win_point = None
-    monster = None
-    for y in range(len(level)):
-        for x in range(len(level[y])):
-            print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
-            if level[y][x] == '.':
-                Tile('empty', x, y)
-            elif level[y][x] == '#':
-                Tile('wall', x, y)
-            elif level[y][x] == '@':
-                Tile('empty', x, y)
-                new_player = Player(x, y)
-            elif level[y][x] == '1':
-                Tile('empty', x, y)
-                teleport_points['1'] = (x, y)
-            elif level[y][x] == '2':
-                Tile('empty', x, y)
-                teleport_points['2'] = (x, y)
-            elif level[y][x] == '%':
-                Tile('empty', x, y)
-                win_point = (x, y)
-            elif level[y][x] == 'M':
-                Tile('empty', x, y)
-                monster = Monster(x, y)
-                all_sprites.add(monster)  # Добавляем монстра в группу спрайтов
-                print("Монстр добавлен в группу спрайтов")
-    return new_player, teleport_points, win_point, monster
-
-
 def load_level(filename):
     filename = "data/" + filename
     with open(filename, 'r', encoding='utf-8') as mapFile:
         level_map = [line.strip() for line in mapFile]
     max_width = max(map(len, level_map))
-    print("Загруженная карта уровня:")
-    for line in level_map:
-        print(line)
+    # print("Загруженная карта уровня:")
+    # for line in level_map:
+    #     print(line)
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
@@ -247,17 +194,17 @@ def generate_level(level):
     teleport_points = {}
     win_point = None
     monster = None
-    l_points = None
+    l_points = []
     for y in range(len(level)):
         for x in range(len(level[y])):
-            print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
+            # print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
             if level[y][x] == '.':
                 Tile('empty', x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
             elif level[y][x] == 'L':
                 Tile('empty', x, y)
-                l_points = (x, y)
+                l_points.append((x, y))
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Player(x, y)
@@ -314,8 +261,7 @@ def create_level_window(map):
             sys.exit()
 
         # Логика проигрыша
-        if monster and player.rect.colliderect(monster.rect) or player.rect.colliderect(
-                pygame.Rect(l_point[0] * tile_width, l_point[1] * tile_height, tile_width, tile_height)):
+        if monster and player.rect.colliderect(monster.rect):
             new_screen.fill((0, 0, 0))
             new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
                                         new_screen.get_height() // 2 - lose_text.get_height() // 2))
@@ -323,6 +269,16 @@ def create_level_window(map):
             pygame.time.wait(3000)
             pygame.quit()
             sys.exit()
+        for i in l_point:
+            if player.rect.colliderect(
+                    pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
+                new_screen.fill((0, 0, 0))
+                new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
+                                            new_screen.get_height() // 2 - lose_text.get_height() // 2))
+                pygame.display.flip()
+                pygame.time.wait(3000)
+                pygame.quit()
+                sys.exit()
 
 
         cursor_rect.topleft = pygame.mouse.get_pos()
