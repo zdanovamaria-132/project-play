@@ -262,7 +262,7 @@ def create_level_window(map_level, level):
             cursor.execute(f'''
                     UPDATE players
                     SET {level} = 1
-                    WHERE {level} = 0
+                    WHERE player = {login}
                 ''') # изменяем прогресс уровня
             conn.commit()
             conn.close()
