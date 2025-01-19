@@ -2,11 +2,16 @@ import pygame
 import sys
 import os
 import random
+from PyQt6 import QtWidgets, uic
+import sqlite3
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QMessageBox
 
+login = "" # переменная для хранения имя пользователя
+level_list = [] # для хранения прогресса уровня: 0 не пройден, 1 пройден
 pygame.init()
 
-screen = pygame.display.set_mode((750, 750))
-pygame.display.set_caption("Главное окно игры")
+screen = None # для экрана
 
 background_window1 = pygame.image.load('data/background/background_window1.png')
 background1 = pygame.image.load('data/background/background1.png')
@@ -226,14 +231,14 @@ def generate_level(level):
     return new_player, teleport_points, win_point, monster, l_points
 
 
-def create_level_window(map):
+def create_level_window(map_level, level):
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Уровень")
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
 
-    player, teleport_points, win_point, monster, l_point = generate_level(load_level(map))
+    player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
 
     font = pygame.font.Font(None, 72)
     win_text = font.render("You Won", True, (255, 0, 0))
@@ -252,6 +257,16 @@ def create_level_window(map):
         # Логика победы
         if player.rect.colliderect(
                 pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
+            conn = sqlite3.connect('data/project_play_bd.db')
+            cursor = conn.cursor()
+            cursor.execute(f'''
+                    UPDATE players
+                    SET {level} = 1
+                    WHERE {level} = 0
+                ''') # изменяем прогресс уровня
+            conn.commit()
+            conn.close()
+
             new_screen.fill((0, 0, 0))
             new_screen.blit(win_text, (new_screen.get_width() // 2 - win_text.get_width() // 2,
                                        new_screen.get_height() // 2 - win_text.get_height() // 2))
@@ -303,9 +318,15 @@ def create_new_window():
     button_image = pygame.transform.scale(button_image, (200, 100))
 
     font = pygame.font.Font(None, 36)
-
-    level1_text = font.render("Уровень 1", True, (255, 255, 255))
-    level2_text = font.render("Уровень 2", True, (255, 255, 255))
+    # заносим прогресс прохождения уровней в список
+    a = []
+    for i in level_list:
+        if i == 0:
+            a.append('Не пройден')
+        elif i == 1:
+            a.append('Пройден')
+    level1_text = font.render(f"Уровень 1-{a[0]}", True, (255, 255, 255))
+    level2_text = font.render(f"Уровень 2-{a[1]}", True, (255, 255, 255))
 
     level1_button_rect = pygame.Rect(100, 200, button_image.get_width(), button_image.get_height())
     level2_button_rect = pygame.Rect(100, 320, button_image.get_width(), button_image.get_height())
@@ -317,9 +338,9 @@ def create_new_window():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if level1_button_rect.collidepoint(event.pos):
-                    create_level_window('level1.txt')
+                    create_level_window('level1.txt', 'level1')
                 elif level2_button_rect.collidepoint(event.pos):
-                    create_level_window('level2.txt')
+                    create_level_window('level2.txt', 'level2')
 
         cursor_rect.topleft = pygame.mouse.get_pos()
 
@@ -335,28 +356,83 @@ def create_new_window():
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
-                    178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
-                    165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
-                create_new_window()
 
-    cursor_rect.topleft = pygame.mouse.get_pos()
+class StartForm(QtWidgets.QWidget): # окно авторизации
+    def __init__(self):
+        super().__init__()
 
-    if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
-            178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
-            165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
-        screen.blit(background1, (0, 0))
-    elif (560 < cursor_rect.x < 605 and 305 < cursor_rect.y < 395 or
-          552 < cursor_rect.x < 630 and 395 < cursor_rect.y < 485):
-        screen.blit(background2, (0, 0))
-    else:
-        screen.blit(background_window1, (0, 0))
+        self.initUI()
 
-    screen.blit(cursor, cursor_rect)
-    pygame.display.flip()
+    def initUI(self): # открываем окно и загружаем картинку
+        uic.loadUi('data/Enter.ui', self)
+
+        pixmap = QPixmap('data/background/fitst_window.jpeg')
+        self.label.setPixmap(pixmap)
+
+        self.btn_further.clicked.connect(self.check_player)
+
+        # Показать окно
+        self.show()
+
+    def check_player(self): # при нажатии на кнопку проверяем корректность логина и пароля
+        # если все правильно запускаем игру
+        text_login = self.textEdit_login.toPlainText()
+        text_password = self.textEdit_password.toPlainText()
+        conn = sqlite3.connect('data/project_play_bd.db')
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM players')
+        rows = cursor.fetchall()
+        conn.close()
+        print(rows)
+        for i in range(len(rows)):
+            if rows[i][0] == text_login and rows[i][1] == text_password:
+                global login
+                login = text_login
+                print("логин и пароль правильные")
+                # записываем из БД прогресс уровней
+                for j in rows[i][2:]:
+                    level_list.append(j)
+                self.start_pygame()
+        QMessageBox.warning(self, "Ошибка", 'Неправильный логин или пароль')
+
+    def start_pygame(self): # сам игровой цикл
+        self.close()
+        print('login ' + login)
+        screen_s = pygame.display.set_mode((750, 750))
+
+        global screen
+        screen = screen_s
+
+        pygame.display.set_caption("Главное окно игры")
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
+                                    178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
+                                    165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
+                        create_new_window()
+
+                cursor_rect.topleft = pygame.mouse.get_pos()
+
+                if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
+                        178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
+                        165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
+                    screen_s.blit(background1, (0, 0))
+                elif (560 < cursor_rect.x < 605 and 305 < cursor_rect.y < 395 or
+                        552 < cursor_rect.x < 630 and 395 < cursor_rect.y < 485):
+                    screen_s.blit(background2, (0, 0))
+                else:
+                    screen_s.blit(background_window1, (0, 0))
+
+                screen.blit(cursor, cursor_rect)
+                pygame.display.flip()
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    window = StartForm()
+    sys.exit(app.exec())
