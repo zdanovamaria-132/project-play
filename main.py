@@ -77,28 +77,49 @@ class Player(pygame.sprite.Sprite):
         self.direction = 'idle'
         self.move_delay = 30
 
-    def update(self):
+    def update(self, messege):
         keys = pygame.key.get_pressed()
         if self.move_delay == 0:
             new_rect = self.rect.copy()
             c = load_level('level1.txt')
             a = c[new_rect.y // 50][new_rect.x // 50]
-            if keys[pygame.K_w] or keys[pygame.K_UP]:
+            if messege == 'up':
                 new_rect.y -= tile_height
                 self.direction = 'up'
                 self.move_delay = 30
                 print("Движение вверх")
-            elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            elif messege == 'down':
                 new_rect.y += tile_height
                 self.direction = 'down'
                 self.move_delay = 30
                 print("Движение вниз")
-            elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            elif messege == 'left':
                 new_rect.x -= tile_width
                 self.direction = 'left'
                 self.move_delay = 30
                 print("Движение влево")
-            elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            elif messege == 'right':
+                new_rect.x += tile_width
+                self.direction = 'right'
+                self.move_delay = 30
+                print("Движение вправо")
+
+            if (keys[pygame.K_w] or keys[pygame.K_UP]) and keys[pygame.K_z]:
+                new_rect.y -= tile_height
+                self.direction = 'up'
+                self.move_delay = 30
+                print("Движение вверх")
+            elif (keys[pygame.K_s] or keys[pygame.K_DOWN]) and keys[pygame.K_z]:
+                new_rect.y += tile_height
+                self.direction = 'down'
+                self.move_delay = 30
+                print("Движение вниз")
+            elif (keys[pygame.K_a] or keys[pygame.K_LEFT]) and keys[pygame.K_z]:
+                new_rect.x -= tile_width
+                self.direction = 'left'
+                self.move_delay = 30
+                print("Движение влево")
+            elif (keys[pygame.K_d] or keys[pygame.K_RIGHT]) and keys[pygame.K_z]:
                 new_rect.x += tile_width
                 self.direction = 'right'
                 self.move_delay = 30
@@ -249,23 +270,33 @@ def create_level_window(map_level, level):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    player.update('up')
+                if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    player.update('down')
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    player.update('right')
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    player.update('left')
 
-        player_group.update()
+        player_group.update('')
         if monster:
             monster.update(player)
 
         # Логика победы
         if player.rect.colliderect(
                 pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
-            conn = sqlite3.connect('data/project_play_bd.db')
-            cursor = conn.cursor()
-            cursor.execute(f'''
-                    UPDATE players
-                    SET {level} = 1
-                    WHERE player = {login}
-                ''') # изменяем прогресс уровня
-            conn.commit()
-            conn.close()
+            if level_list[int(level[-1]) - 1] == 0:
+                conn = sqlite3.connect('data/project_play_bd.db')
+                cursor = conn.cursor()
+                cursor.execute(f'''
+                        UPDATE players
+                        SET {level} = 1
+                        WHERE player = {login}
+                    ''') # изменяем прогресс уровня
+                conn.commit()
+                conn.close()
 
             new_screen.fill((0, 0, 0))
             new_screen.blit(win_text, (new_screen.get_width() // 2 - win_text.get_width() // 2,
