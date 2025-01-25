@@ -87,22 +87,23 @@ class Player(pygame.sprite.Sprite):
                 new_rect.y -= tile_height
                 self.direction = 'up'
                 self.move_delay = 30
-                print("Движение вверх")
+                # print("Движение вверх")
             elif messege == 'down':
                 new_rect.y += tile_height
                 self.direction = 'down'
                 self.move_delay = 30
-                print("Движение вниз")
+                # print("Движение вниз")
             elif messege == 'left':
                 new_rect.x -= tile_width
                 self.direction = 'left'
                 self.move_delay = 30
-                print("Движение влево")
+                # print("Движение влево")
             elif messege == 'right':
                 new_rect.x += tile_width
                 self.direction = 'right'
                 self.move_delay = 30
-                print("Движение вправо")
+                # print("Движение вправо")
+
 
             if (keys[pygame.K_w] or keys[pygame.K_UP]) and keys[pygame.K_z]:
                 new_rect.y -= tile_height
@@ -293,7 +294,7 @@ def create_level_window(map_level, level):
                 cursor.execute(f'''
                         UPDATE players
                         SET {level} = 1
-                        WHERE player = {login}
+                        WHERE player = '{login}'
                     ''') # изменяем прогресс уровня
                 conn.commit()
                 conn.close()
@@ -388,6 +389,53 @@ def create_new_window():
         pygame.display.flip()
 
 
+class RegistrationForm(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+
+    def initUI(self):  # открываем окно и загружаем картинку
+        uic.loadUi('data/Registration.ui', self)
+
+        pixmap = QPixmap('data/background/first_window.jpeg')
+        self.label_photo.setPixmap(pixmap)
+
+        self.btn_ok.clicked.connect(self.create_new_player)
+
+        # Показать окно
+        self.show()
+
+    def startform(self):
+        self.startform = StartForm()
+        self.startform.show()
+
+    def create_new_player(self):
+        text_login = self.textEdit_login.toPlainText()
+        text_password = self.textEdit_password.toPlainText()
+        conn = sqlite3.connect('data/project_play_bd.db')
+        cursor = conn.cursor()
+        if text_login and text_password:
+            cursor.execute('SELECT player FROM players')
+            rows = cursor.fetchall()
+            names = [i[0] for i in rows]
+            if text_login in names:
+                QMessageBox.warning(self, "Ошибка", 'Такое имя уже существует')
+            elif len(text_password) >= 3:
+                cursor.execute('INSERT INTO players (player, password, level1, level2, level3, level4, level5)'
+                               ' VALUES (?, ?, ?, ?, ?, ?, ?)',
+                               (text_login, text_password, 0, 0, 0, 0, 0))
+                conn.commit()
+                conn.close()
+                QMessageBox.information(self, "Информация", f"Вы успешно зарегистрированы")
+                self.close()
+            else:
+                QMessageBox.warning(self, "Ошибка", 'Пароль не подходит')
+        else:
+            QMessageBox.warning(self, "Ошибка", 'Введите логин и пароль')
+
+
+
 class StartForm(QtWidgets.QWidget): # окно авторизации
     def __init__(self):
         super().__init__()
@@ -397,13 +445,18 @@ class StartForm(QtWidgets.QWidget): # окно авторизации
     def initUI(self): # открываем окно и загружаем картинку
         uic.loadUi('data/Enter.ui', self)
 
-        pixmap = QPixmap('data/background/fitst_window.jpeg')
+        pixmap = QPixmap('data/background/first_window.jpeg')
         self.label.setPixmap(pixmap)
 
         self.btn_further.clicked.connect(self.check_player)
+        self.btn_registration.clicked.connect(self.registration)
 
         # Показать окно
         self.show()
+
+    def registration(self):
+        self.registration_form = RegistrationForm()
+        self.registration_form.show()
 
     def check_player(self): # при нажатии на кнопку проверяем корректность логина и пароля
         # если все правильно запускаем игру
