@@ -91,6 +91,23 @@ class Player(pygame.sprite.Sprite):
             a = c[new_rect.y // 50][new_rect.x // 50]
             self.moving = False
 
+            if keys[pygame.K_q] and a == '1':
+                coordinates_p = []
+                # Проходим по каждой строке и ищем символ '+'
+                for row_index, line in enumerate(c):
+                    for col_index, char in enumerate(line):
+                        if char == '2':
+                            coordinates_p.append((row_index, col_index))  # Добавляем координаты в список
+                new_rect.x, new_rect.y = coordinates_p[0][1] * 50, coordinates_p[0][0] * 50
+            elif keys[pygame.K_e] and a == '2':
+                coordinates_m = []
+                # Проходим по каждой строке и ищем символ '-'
+                for row_index, line in enumerate(c):
+                    for col_index, char in enumerate(line):
+                        if char == '1':
+                            coordinates_m.append((row_index, col_index))  # Добавляем координаты в список
+                new_rect.x, new_rect.y = coordinates_m[0][1] * 50, coordinates_m[0][0] * 50
+
             if message == 'up':
                 step_size = -tile_height * move_multiplier
                 for step in range(abs(step_size)):
