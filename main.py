@@ -7,11 +7,11 @@ import sqlite3
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QMessageBox
 
-login = "" # переменная для хранения имя пользователя
-level_list = [] # для хранения прогресса уровня: 0 не пройден, 1 пройден
+login = ""  # переменная для хранения имя пользователя
+level_list = []  # для хранения прогресса уровня: 0 не пройден, 1 пройден
 pygame.init()
 
-screen = None # для экрана
+screen = None  # для экрана
 
 background_window1 = pygame.image.load('data/background/background_window1.png')
 background1 = pygame.image.load('data/background/background1.png')
@@ -69,95 +69,78 @@ class Player(pygame.sprite.Sprite):
         super().__init__(player_group, all_sprites)
         self.images = player_images
         self.image = self.images[0]
-        # Смещаем персонажа на половину ширины и высоты спрайта
         self.rect = self.image.get_rect().move(tile_width * pos_x + tile_width // 2 - self.image.get_width() // 2,
                                                tile_height * pos_y + tile_height // 2 - self.image.get_height() // 2)
         self.frame = 0
-        self.animation_speed = 0.05
+        self.animation_speed = 0.1
         self.direction = 'idle'
         self.move_delay = 30
+        self.moving = False
 
-    def update(self, messege):
+    def update(self, message):
         keys = pygame.key.get_pressed()
+        move_multiplier = 1
+
+        if keys[pygame.K_z]:
+            move_multiplier = 2  # Увеличение скорости в два раза при зажатии клавиши 'z'
+
         if self.move_delay == 0:
             new_rect = self.rect.copy()
+            step_size = tile_width  # Используйте меньший шаг для перемещения
             c = load_level('level1.txt')
             a = c[new_rect.y // 50][new_rect.x // 50]
-            if messege == 'up':
-                new_rect.y -= tile_height
+            self.moving = False
+
+            if message == 'up':
+                step_size = -tile_height * move_multiplier
+                for step in range(abs(step_size)):
+                    new_rect.y += int(step_size / abs(step_size))
+                    collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
+                    if collision:
+                        new_rect.y -= int(step_size / abs(step_size))
+                        break
                 self.direction = 'up'
+                self.moving = True
                 self.move_delay = 30
-                # print("Движение вверх")
-            elif messege == 'down':
-                new_rect.y += tile_height
+            elif message == 'down':
+                step_size = tile_height * move_multiplier
+                for step in range(abs(step_size)):
+                    new_rect.y += int(step_size / abs(step_size))
+                    collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
+                    if collision:
+                        new_rect.y -= int(step_size / abs(step_size))
+                        break
                 self.direction = 'down'
+                self.moving = True
                 self.move_delay = 30
-                # print("Движение вниз")
-            elif messege == 'left':
-                new_rect.x -= tile_width
+            elif message == 'left':
+                step_size = -tile_width * move_multiplier
+                for step in range(abs(step_size)):
+                    new_rect.x += int(step_size / abs(step_size))
+                    collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
+                    if collision:
+                        new_rect.x -= int(step_size / abs(step_size))
+                        break
                 self.direction = 'left'
+                self.moving = True
                 self.move_delay = 30
-                # print("Движение влево")
-            elif messege == 'right':
-                new_rect.x += tile_width
+            elif message == 'right':
+                step_size = tile_width * move_multiplier
+                for step in range(abs(step_size)):
+                    new_rect.x += int(step_size / abs(step_size))
+                    collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
+                    if collision:
+                        new_rect.x -= int(step_size / abs(step_size))
+                        break
                 self.direction = 'right'
+                self.moving = True
                 self.move_delay = 30
-                # print("Движение вправо")
 
+            if 0 <= new_rect.left and new_rect.right <= screen.get_width() and \
+                    0 <= new_rect.top and new_rect.bottom <= screen.get_height():
+                self.rect = new_rect
 
-            if (keys[pygame.K_w] or keys[pygame.K_UP]) and keys[pygame.K_z]:
-                new_rect.y -= tile_height
-                self.direction = 'up'
-                self.move_delay = 30
-                print("Движение вверх")
-            elif (keys[pygame.K_s] or keys[pygame.K_DOWN]) and keys[pygame.K_z]:
-                new_rect.y += tile_height
-                self.direction = 'down'
-                self.move_delay = 30
-                print("Движение вниз")
-            elif (keys[pygame.K_a] or keys[pygame.K_LEFT]) and keys[pygame.K_z]:
-                new_rect.x -= tile_width
-                self.direction = 'left'
-                self.move_delay = 30
-                print("Движение влево")
-            elif (keys[pygame.K_d] or keys[pygame.K_RIGHT]) and keys[pygame.K_z]:
-                new_rect.x += tile_width
-                self.direction = 'right'
-                self.move_delay = 30
-                print("Движение вправо")
-            # телепортация
-            elif keys[pygame.K_q] and a == '1':
-                coordinates_p = []
-                # Проходим по каждой строке и ищем символ '+'
-                for row_index, line in enumerate(c):
-                    for col_index, char in enumerate(line):
-                        if char == '2':
-                            coordinates_p.append((row_index, col_index))  # Добавляем координаты в список
-                new_rect.x, new_rect.y = coordinates_p[0][1] * 50, coordinates_p[0][0] * 50
-            elif keys[pygame.K_e] and a == '2':
-                coordinates_m = []
-                # Проходим по каждой строке и ищем символ '-'
-                for row_index, line in enumerate(c):
-                    for col_index, char in enumerate(line):
-                        if char == '1':
-                            coordinates_m.append((row_index, col_index))  # Добавляем координаты в список
-                new_rect.x, new_rect.y = coordinates_m[0][1] * 50, coordinates_m[0][0] * 50
-            else:
-                self.direction = 'idle'
-
-            # Проверка на столкновение только со спрайтами стен
-            collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
-            if collision:
-                print("Столкновение со стеной")
-            else:
-                # Проверка границ экрана
-                if 0 <= new_rect.left and new_rect.right <= screen.get_width() and \
-                        0 <= new_rect.top and new_rect.bottom <= screen.get_height():
-                    self.rect = new_rect
-                else:
-                    print("Выход за границы экрана")
-
-        if self.direction != 'idle':
+        if self.moving:
             self.frame += self.animation_speed
             if self.frame >= len(self.images):
                 self.frame = 1
@@ -295,7 +278,7 @@ def create_level_window(map_level, level):
                         UPDATE players
                         SET {level} = 1
                         WHERE player = '{login}'
-                    ''') # изменяем прогресс уровня
+                    ''')  # изменяем прогресс уровня
                 conn.commit()
                 conn.close()
 
@@ -326,7 +309,6 @@ def create_level_window(map_level, level):
                 pygame.time.wait(3000)
                 pygame.quit()
                 sys.exit()
-
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
@@ -435,14 +417,13 @@ class RegistrationForm(QtWidgets.QWidget):
             QMessageBox.warning(self, "Ошибка", 'Введите логин и пароль')
 
 
-
-class StartForm(QtWidgets.QWidget): # окно авторизации
+class StartForm(QtWidgets.QWidget):  # окно авторизации
     def __init__(self):
         super().__init__()
 
         self.initUI()
 
-    def initUI(self): # открываем окно и загружаем картинку
+    def initUI(self):  # открываем окно и загружаем картинку
         uic.loadUi('data/Enter.ui', self)
 
         pixmap = QPixmap('data/background/first_window.jpeg')
@@ -458,7 +439,7 @@ class StartForm(QtWidgets.QWidget): # окно авторизации
         self.registration_form = RegistrationForm()
         self.registration_form.show()
 
-    def check_player(self): # при нажатии на кнопку проверяем корректность логина и пароля
+    def check_player(self):  # при нажатии на кнопку проверяем корректность логина и пароля
         # если все правильно запускаем игру
         text_login = self.textEdit_login.toPlainText()
         text_password = self.textEdit_password.toPlainText()
@@ -480,7 +461,7 @@ class StartForm(QtWidgets.QWidget): # окно авторизации
                 self.start_pygame()
         QMessageBox.warning(self, "Ошибка", 'Неправильный логин или пароль')
 
-    def start_pygame(self): # сам игровой цикл
+    def start_pygame(self):  # сам игровой цикл
         self.close()
         print('login ' + login)
         screen_s = pygame.display.set_mode((750, 750))
@@ -497,8 +478,8 @@ class StartForm(QtWidgets.QWidget): # окно авторизации
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
-                                    178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
-                                    165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
+                            178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
+                            165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
                         create_new_window()
 
                 cursor_rect.topleft = pygame.mouse.get_pos()
@@ -508,13 +489,14 @@ class StartForm(QtWidgets.QWidget): # окно авторизации
                         165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
                     screen_s.blit(background1, (0, 0))
                 elif (560 < cursor_rect.x < 605 and 305 < cursor_rect.y < 395 or
-                        552 < cursor_rect.x < 630 and 395 < cursor_rect.y < 485):
+                      552 < cursor_rect.x < 630 and 395 < cursor_rect.y < 485):
                     screen_s.blit(background2, (0, 0))
                 else:
                     screen_s.blit(background_window1, (0, 0))
 
                 screen.blit(cursor, cursor_rect)
                 pygame.display.flip()
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
