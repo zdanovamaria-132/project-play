@@ -338,16 +338,32 @@ def create_level_window(map_level, level):
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
+def draw_multiline_text(text, x, y, font, color):
+    # Делим текст на строки
+    lines = text.splitlines()
+    for line in lines:
+        text_surface = font.render(line, True, color)
+        screen.blit(text_surface, (x, y))
+        y += text_surface.get_height()  # Смещаем Y координату вниз на высоту строки
 
 def create_new_window():
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Выбор уровня")
-    background_window2 = pygame.image.load('data/background/background_window2.png')
+    # background_window2 = pygame.image.load('data/background/background_window2.png')
+    background_window2 = pygame.image.load('data/фон.jpg')
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
+    font = pygame.font.Font(None, 36) # шрифт текста
+    num_rectangles = 5 # количество рамочек
+    rect_width = 720 # размеры рамочек
+    rect_height = 125
+    spacing = 12 # начальная позиция и промежуток между рамками
+    start_y = 50
+    long_text = """*Описание уровня*"""
 
-    button_image = pygame.image.load('data/button.png')
+
+    button_image = pygame.image.load('data/кнопка.png')
     button_image = pygame.transform.scale(button_image, (200, 100))
 
     font = pygame.font.Font(None, 36)
@@ -358,11 +374,14 @@ def create_new_window():
             a.append('Не пройден')
         elif i == 1:
             a.append('Пройден')
-    level1_text = font.render(f"Уровень 1-{a[0]}", True, (255, 255, 255))
-    level2_text = font.render(f"Уровень 2-{a[1]}", True, (255, 255, 255))
+    print(a[2])
+    level1_text = font.render(a[0], True, (255, 255, 255))
+    level2_text = font.render(a[1], True, (255, 255, 255))
+    level3_text = font.render(a[2], True, (255, 255, 255))
 
-    level1_button_rect = pygame.Rect(100, 200, button_image.get_width(), button_image.get_height())
-    level2_button_rect = pygame.Rect(100, 320, button_image.get_width(), button_image.get_height())
+    level1_button_rect = pygame.Rect(500, 60, button_image.get_width(), button_image.get_height())
+    level2_button_rect = pygame.Rect(500, 200, button_image.get_width(), button_image.get_height())
+    level3_button_rect = pygame.Rect(500, 340, button_image.get_width(), button_image.get_height())
 
     running = True
     while running:
@@ -374,18 +393,33 @@ def create_new_window():
                     create_level_window('level1.txt', 'level1')
                 elif level2_button_rect.collidepoint(event.pos):
                     create_level_window('level2.txt', 'level2')
-
         cursor_rect.topleft = pygame.mouse.get_pos()
-
         new_screen.blit(background_window2, (0, 0))
+        draw_multiline_text('Прежде чем отправиться в путь выбери задание', 20, 5, font, (255, 255, 255))
+        for i in range(num_rectangles):
+            # Вычисляем позицию рамки
+            x = (750 - rect_width) // 2  # Центруем по горизонтали
+            y = start_y + i * (rect_height + spacing)
+
+            # Рисуем рамку
+            pygame.draw.rect(new_screen, (0, 0, 0), (x, y, rect_width, rect_height), 2)
+
+            draw_multiline_text(long_text, x, y, font, (255, 255, 255))
+
+
+
         new_screen.blit(button_image, level1_button_rect.topleft)
         new_screen.blit(button_image, level2_button_rect.topleft)
+        new_screen.blit(button_image, level3_button_rect.topleft)
         new_screen.blit(level1_text, (level1_button_rect.x + (button_image.get_width() - level1_text.get_width()) // 2,
                                       level1_button_rect.y + (
                                               button_image.get_height() - level1_text.get_height()) // 2))
         new_screen.blit(level2_text, (level2_button_rect.x + (button_image.get_width() - level2_text.get_width()) // 2,
                                       level2_button_rect.y + (
                                               button_image.get_height() - level2_text.get_height()) // 2))
+        new_screen.blit(level3_text, (level3_button_rect.x + (button_image.get_width() - level3_text.get_width()) // 2,
+                                      level2_button_rect.y + (
+                                              button_image.get_height() - level3_text.get_height()) // 2))
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
