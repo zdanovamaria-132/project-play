@@ -37,7 +37,9 @@ def load_images_from_folder(folder):
 
 tile_images = {
     'wall': load_images_from_folder('data/walls'),
-    'empty': load_images_from_folder('data/empty')
+    'empty': load_images_from_folder('data/empty'),
+    'teleport_e': load_images_from_folder('data/teleport_e'),
+    'teleport_q': load_images_from_folder('data/teleport_q')
 }
 player_images = [
     pygame.image.load('data/player_walk1.png'),
@@ -236,10 +238,10 @@ def generate_level(level):
                 Tile('empty', x, y)
                 new_player = Player(x, y)
             elif level[y][x] == '1':
-                Tile('empty', x, y)
+                Tile('teleport_e', x, y)
                 teleport_points['1'] = (x, y)
             elif level[y][x] == '2':
-                Tile('empty', x, y)
+                Tile('teleport_q', x, y)
                 teleport_points['2'] = (x, y)
             elif level[y][x] == '%':
                 Tile('empty', x, y)
