@@ -88,7 +88,7 @@ class Player(pygame.sprite.Sprite):
 
         if self.move_delay == 0:
             new_rect = self.rect.copy()
-            step_size = tile_width  # Используйте меньший шаг для перемещения
+            step_size = tile_width
             c = load_level('level1.txt')
             a = c[new_rect.y // 50][new_rect.x // 50]
             self.moving = False
@@ -187,7 +187,7 @@ class Monster(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.image = pygame.image.load('data/monster.png')
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        self.speed = 0.5  # Уменьшите скорость монстра
+        self.speed = 0.5
         print(f"Монстр создан на позиции ({pos_x}, {pos_y})")
 
     def update(self, player):
