@@ -303,8 +303,8 @@ def create_level_window(map_level, level):
 
         # Логика проигрыша
         if monster and player.rect.colliderect(monster.rect):
-
             finih_window(lose_text)
+
         for i in l_point:
             if player.rect.colliderect(
                     pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
@@ -347,7 +347,7 @@ def finih_window(text):
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
 
-    button_image = pygame.image.load('data/Рамочки_ (1).png')
+    button_image = pygame.image.load('data/кнопка_финиша.png')
     button_image = pygame.transform.scale(button_image, (200, 50))
 
     font = pygame.font.Font(None, 22)
