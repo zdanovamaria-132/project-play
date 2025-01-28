@@ -264,9 +264,8 @@ def create_level_window(map_level, level):
 
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
 
-    font = pygame.font.Font(None, 72)
-    win_text = font.render("You Won", True, (255, 0, 0))
-    lose_text = font.render("Game Over", True, (255, 0, 0))
+    win_text = 'win'
+    lose_text = "loss"
 
     running = True
     while running:
@@ -300,34 +299,16 @@ def create_level_window(map_level, level):
                     ''')  # изменяем прогресс уровня
                 conn.commit()
                 conn.close()
-
-            new_screen.fill((0, 0, 0))
-            new_screen.blit(win_text, (new_screen.get_width() // 2 - win_text.get_width() // 2,
-                                       new_screen.get_height() // 2 - win_text.get_height() // 2))
-            pygame.display.flip()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
+            finih_window(win_text)
 
         # Логика проигрыша
         if monster and player.rect.colliderect(monster.rect):
-            new_screen.fill((0, 0, 0))
-            new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
-                                        new_screen.get_height() // 2 - lose_text.get_height() // 2))
-            pygame.display.flip()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
+
+            finih_window(lose_text)
         for i in l_point:
             if player.rect.colliderect(
                     pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
-                new_screen.fill((0, 0, 0))
-                new_screen.blit(lose_text, (new_screen.get_width() // 2 - lose_text.get_width() // 2,
-                                            new_screen.get_height() // 2 - lose_text.get_height() // 2))
-                pygame.display.flip()
-                pygame.time.wait(3000)
-                pygame.quit()
-                sys.exit()
+                finih_window(lose_text)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
@@ -337,6 +318,8 @@ def create_level_window(map_level, level):
             new_screen.blit(monster.image, monster.rect.topleft)
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
+    pygame.quit()
+    sys.exit()
 
 def draw_multiline_text(text, x, y, font, color):
     # Делим текст на строки
@@ -346,15 +329,79 @@ def draw_multiline_text(text, x, y, font, color):
         screen.blit(text_surface, (x, y))
         y += text_surface.get_height()  # Смещаем Y координату вниз на высоту строки
 
+def finih_window(text):
+    new_screen = pygame.display.set_mode((750, 750))
+    pygame.display.set_caption("Результат уровня")
+    background_window = None
+    text_result = ''
+    color = None
+    if text == 'win':
+        text_result = ('Поздравляем, вы усешно заверишил задание :)')
+        background_window = pygame.image.load('data/win_photo.jpeg')
+        color = (0, 0, 255)
+    elif text == 'loss':
+        background_window = pygame.image.load('data/loss_photo.jpeg')
+        text_result = ('К сожалению, вы не сравились с заданием :(')
+        color = (255, 255, 255)
+    cursor = pygame.image.load('data/cursor.png')
+    cursor_rect = cursor.get_rect()
+    pygame.mouse.set_visible(False)
+
+    button_image = pygame.image.load('data/Рамочки_ (1).png')
+    button_image = pygame.transform.scale(button_image, (200, 50))
+
+    font = pygame.font.Font(None, 22)
+
+    back_text = font.render('Вернуться к заданиям', True, (255, 255, 255))
+    finish_text = font.render('Завешить угру', True, (255, 255, 255))
+
+    back = pygame.Rect(500, 575, button_image.get_width(), button_image.get_height())
+    finish = pygame.Rect(500, 675, button_image.get_width(), button_image.get_height())
+
+    # Основной игровой цикл
+    running = True
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False  # Устанавливаем флаг, что окно закрылось
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back.collidepoint(event.pos):
+                    create_new_window()
+                elif finish.collidepoint(event.pos):
+                    # Завершение Pygame
+                    pygame.quit()
+                    sys.exit()
+        cursor_rect.topleft = pygame.mouse.get_pos()
+        new_screen.blit(background_window, (0, 0))
+
+        # Отображение текста
+        font = pygame.font.Font(None, 36)
+        # texts = font.render(text_result, True, color)
+        # text_rect = texts.get_rect(center=
+        #                            (750 // 2, 750 // 2))
+        # new_screen.blit(texts, text_rect)
+        draw_multiline_text(text_result, 100, 750 // 2, font, color)
+        new_screen.blit(button_image, back.topleft)
+        new_screen.blit(button_image, finish.topleft)
+
+        new_screen.blit(back_text, (back.x + (button_image.get_width() - back_text.get_width()) // 2,
+                                      back.y + (button_image.get_height() - back_text.get_height()) // 2))
+        new_screen.blit(finish_text, (finish.x + (button_image.get_width() - finish_text.get_width()) // 2,
+                                      finish.y + (button_image.get_height() - finish_text.get_height()) // 2))
+        new_screen.blit(cursor, cursor_rect)
+        pygame.display.flip()  # Обновление экрана
+    pygame.quit()
+    sys.exit()
+
+
 def create_new_window():
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Выбор уровня")
-    # background_window2 = pygame.image.load('data/background/background_window2.png')
     background_window2 = pygame.image.load('data/фон.jpg')
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
-    font = pygame.font.Font(None, 36) # шрифт текста
     num_rectangles = 5 # количество рамочек
     rect_width = 720 # размеры рамочек
     rect_height = 125
@@ -422,6 +469,9 @@ def create_new_window():
                                               button_image.get_height() - level3_text.get_height()) // 2))
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
+
+    pygame.quit()
+    sys.exit()
 
 
 class RegistrationForm(QtWidgets.QWidget):
@@ -549,6 +599,8 @@ class StartForm(QtWidgets.QWidget):  # окно авторизации
 
                 screen.blit(cursor, cursor_rect)
                 pygame.display.flip()
+        pygame.quit()
+        sys.exit()
 
 
 if __name__ == "__main__":
