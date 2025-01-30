@@ -176,9 +176,6 @@ def load_level(filename):
     with open(filename, 'r', encoding='utf-8') as mapFile:
         level_map = [line.strip() for line in mapFile]
     max_width = max(map(len, level_map))
-    # print("Загруженная карта уровня:")
-    # for line in level_map:
-    #     print(line)
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
@@ -377,10 +374,6 @@ def finih_window(text):
 
         # Отображение текста
         font = pygame.font.Font(None, 36)
-        # texts = font.render(text_result, True, color)
-        # text_rect = texts.get_rect(center=
-        #                            (750 // 2, 750 // 2))
-        # new_screen.blit(texts, text_rect)
         draw_multiline_text(text_result, 100, 750 // 2, font, color)
         new_screen.blit(button_image, back.topleft)
         new_screen.blit(button_image, finish.topleft)
@@ -403,32 +396,27 @@ def create_new_window():
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
     num_rectangles = 5 # количество рамочек
-    rect_width = 720 # размеры рамочек
-    rect_height = 125
-    spacing = 12 # начальная позиция и промежуток между рамками
-    start_y = 50
+    rect_width, rect_height = 720, 125 # размеры рамочек
+    start_y, spacing = 50, 12 # начальная позиция и промежуток между рамками
     long_text = """*Описание уровня*"""
-
 
     button_image = pygame.image.load('data/кнопка.png')
     button_image = pygame.transform.scale(button_image, (200, 100))
 
     font = pygame.font.Font(None, 36)
     # заносим прогресс прохождения уровней в список
-    a = []
+    list_level_text = []
     for i in level_list:
         if i == 0:
-            a.append('Не пройден')
+            list_level_text.append(font.render('Не пройден', True, (255, 255, 255)))
         elif i == 1:
-            a.append('Пройден')
-    print(a[2])
-    level1_text = font.render(a[0], True, (255, 255, 255))
-    level2_text = font.render(a[1], True, (255, 255, 255))
-    level3_text = font.render(a[2], True, (255, 255, 255))
+            list_level_text.append(font.render('Пройден', True, (255, 255, 255)))
 
-    level1_button_rect = pygame.Rect(500, 60, button_image.get_width(), button_image.get_height())
-    level2_button_rect = pygame.Rect(500, 200, button_image.get_width(), button_image.get_height())
-    level3_button_rect = pygame.Rect(500, 340, button_image.get_width(), button_image.get_height())
+    list_button_rect = [pygame.Rect(500, 60, button_image.get_width(), button_image.get_height()),
+                        pygame.Rect(500, 200, button_image.get_width(), button_image.get_height()),
+                        pygame.Rect(500, 340, button_image.get_width(), button_image.get_height()),
+                        pygame.Rect(500, 475, button_image.get_width(), button_image.get_height()),
+                        pygame.Rect(500, 615, button_image.get_width(), button_image.get_height())]
 
     running = True
     while running:
@@ -436,10 +424,12 @@ def create_new_window():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if level1_button_rect.collidepoint(event.pos):
+                if list_button_rect[0].collidepoint(event.pos):
                     create_level_window('level1.txt', 'level1')
-                elif level2_button_rect.collidepoint(event.pos):
+                elif list_button_rect[1].collidepoint(event.pos):
                     create_level_window('level2.txt', 'level2')
+                elif list_button_rect[2].collidepoint(event.pos):
+                    create_level_window('level3.txt', 'level3')
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.blit(background_window2, (0, 0))
         draw_multiline_text('Прежде чем отправиться в путь выбери задание', 20, 5, font, (255, 255, 255))
@@ -454,19 +444,11 @@ def create_new_window():
             draw_multiline_text(long_text, x, y, font, (255, 255, 255))
 
 
-
-        new_screen.blit(button_image, level1_button_rect.topleft)
-        new_screen.blit(button_image, level2_button_rect.topleft)
-        new_screen.blit(button_image, level3_button_rect.topleft)
-        new_screen.blit(level1_text, (level1_button_rect.x + (button_image.get_width() - level1_text.get_width()) // 2,
-                                      level1_button_rect.y + (
-                                              button_image.get_height() - level1_text.get_height()) // 2))
-        new_screen.blit(level2_text, (level2_button_rect.x + (button_image.get_width() - level2_text.get_width()) // 2,
-                                      level2_button_rect.y + (
-                                              button_image.get_height() - level2_text.get_height()) // 2))
-        new_screen.blit(level3_text, (level3_button_rect.x + (button_image.get_width() - level3_text.get_width()) // 2,
-                                      level2_button_rect.y + (
-                                              button_image.get_height() - level3_text.get_height()) // 2))
+        for i in range(5):
+            new_screen.blit(button_image, list_button_rect[i].topleft)
+            new_screen.blit(list_level_text[i],
+                            (list_button_rect[i].x + (button_image.get_width() - list_level_text[i].get_width()) // 2,
+                             list_button_rect[i].y + (button_image.get_height() - list_level_text[i].get_height()) // 2))
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
