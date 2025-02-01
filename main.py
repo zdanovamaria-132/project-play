@@ -398,7 +398,11 @@ def create_new_window():
     num_rectangles = 5 # количество рамочек
     rect_width, rect_height = 720, 125 # размеры рамочек
     start_y, spacing = 50, 12 # начальная позиция и промежуток между рамками
-    long_text = """*Описание уровня*"""
+    conn = sqlite3.connect('data/project_play_bd.db')
+    cur = conn.cursor()
+    cur.execute('SELECT description FROM levels')
+    rows = cur.fetchall()
+    long_text = [i[0] for i in rows]
 
     button_image = pygame.image.load('data/кнопка.png')
     button_image = pygame.transform.scale(button_image, (200, 100))
@@ -408,9 +412,9 @@ def create_new_window():
     list_level_text = []
     for i in level_list:
         if i == 0:
-            list_level_text.append(font.render('Не пройден', True, (255, 255, 255)))
+            list_level_text.append(font.render('Не пройден', True, (0, 0, 0)))
         elif i == 1:
-            list_level_text.append(font.render('Пройден', True, (255, 255, 255)))
+            list_level_text.append(font.render('Пройден', True, (0, 0, 0)))
 
     list_button_rect = [pygame.Rect(500, 60, button_image.get_width(), button_image.get_height()),
                         pygame.Rect(500, 200, button_image.get_width(), button_image.get_height()),
@@ -432,16 +436,19 @@ def create_new_window():
                     create_level_window('level3.txt', 'level3')
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.blit(background_window2, (0, 0))
-        draw_multiline_text('Прежде чем отправиться в путь выбери задание', 20, 5, font, (255, 255, 255))
+        draw_multiline_text('Прежде чем отправиться в путь выбери задание', 20, 5, font,
+                            (0, 0, 0))
+        coord = []
         for i in range(num_rectangles):
             # Вычисляем позицию рамки
             x = (750 - rect_width) // 2  # Центруем по горизонтали
             y = start_y + i * (rect_height + spacing)
 
             # Рисуем рамку
-            pygame.draw.rect(new_screen, (0, 0, 0), (x, y, rect_width, rect_height), 2)
-
-            draw_multiline_text(long_text, x, y, font, (255, 255, 255))
+            pygame.draw.rect(new_screen, '#38130cff', (x, y, rect_width, rect_height), 2)
+            coord.append((x + 5, y + 3))
+        for i in range(len(coord)):
+            draw_multiline_text(long_text[i], coord[i][0], coord[i][1], font, (0, 0, 0))
 
 
         for i in range(5):
