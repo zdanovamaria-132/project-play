@@ -26,10 +26,10 @@ pygame.mouse.set_visible(False)
 def load_images_from_folder(folder):
     if not os.path.exists(folder):
         raise FileNotFoundError(f"Папка '{folder}' не найдена.")
-    images = []
+    images = {}
     for filename in os.listdir(folder):
         if filename.endswith('.png'):
-            images.append(pygame.image.load(os.path.join(folder, filename)))
+            images[filename] = pygame.image.load(os.path.join(folder, filename))
     if not images:
         raise FileNotFoundError(f"Нет изображений в папке '{folder}'.")
     return images
@@ -41,6 +41,7 @@ tile_images = {
     'teleport_e': load_images_from_folder('data/teleport_e'),
     'teleport_q': load_images_from_folder('data/teleport_q')
 }
+
 player_images = [
     pygame.image.load('data/player_walk1.png'),
     pygame.image.load('data/player_walk2.png'),
@@ -57,34 +58,76 @@ player_group = pygame.sprite.Group()
 
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, tile_type, pos_x, pos_y):
+    def __init__(self, tile_type, pos_x, pos_y, image_file=None):
         super().__init__(tiles_group, all_sprites)
-        self.image = random.choice(tile_images[tile_type])
+        if image_file:
+            self.image = tile_images[tile_type][image_file]
+        else:
+            self.image = random.choice(list(tile_images[tile_type].values()))
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
         self.type = tile_type
         if tile_type == 'wall':
             walls_group.add(self)  # Добавляем в группу стен
+        self.image_file = image_file  # Сохраняем имя файла изображения
+
+
+# Загрузка изображения empty.png
+empty_image = pygame.image.load('data/empty/empty.png')
+
+# Загрузка изображений empty1.png, empty2.png и т.д.
+empty_images = [pygame.image.load(f'data/empty/empty{i}.png') for i in range(1, 10)]
+empty_replacement_image = pygame.image.load('data/empty/empty.png')
+
+
+def load_sprite_sheet(sheet, frame_width, frame_height, num_frames, row):
+    frames = []
+    sheet_width, sheet_height = sheet.get_size()
+    for x in range(num_frames):
+        if x * frame_width < sheet_width and row * frame_height < sheet_height:
+            frame = sheet.subsurface(pygame.Rect(x * frame_width, row * frame_height, frame_width, frame_height))
+            frames.append(frame)
+        else:
+            raise ValueError("Subsurface rectangle outside surface area")
+    return frames
+
+
+# Загрузка спрайтового листа
+sprite_sheet = pygame.image.load('data/sprite_sheet.png')
+
+# Разделение на кадры для каждого направления
+walk_down_frames = load_sprite_sheet(sprite_sheet, frame_width=50, frame_height=50, num_frames=6,
+                                     row=0)  # Кадры для движения вниз
+walk_left_frames = load_sprite_sheet(sprite_sheet, frame_width=50, frame_height=50, num_frames=6,
+                                     row=1)  # Кадры для движения влево
+walk_up_frames = load_sprite_sheet(sprite_sheet, frame_width=50, frame_height=50, num_frames=6,
+                                   row=2)  # Кадры для движения вверх
+walk_right_frames = load_sprite_sheet(sprite_sheet, frame_width=50, frame_height=50, num_frames=6,
+                                      row=3)  # Кадры для движения вправо
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
-        self.images = player_images
-        self.image = self.images[0]
+        self.walk_down_frames = walk_down_frames
+        self.walk_left_frames = walk_left_frames
+        self.walk_up_frames = walk_up_frames
+        self.walk_right_frames = walk_right_frames
+        self.image = self.walk_down_frames[0]  # Начальная позиция (смотрит вниз)
         self.rect = self.image.get_rect().move(tile_width * pos_x + tile_width // 2 - self.image.get_width() // 2,
                                                tile_height * pos_y + tile_height // 2 - self.image.get_height() // 2)
         self.frame = 0
         self.animation_speed = 0.1
-        self.direction = 'idle'
+        self.direction = 'down'
         self.move_delay = 30
         self.moving = False
+        self.score = 0  # Добавляем атрибут score для учета очков
 
     def update(self, message):
         keys = pygame.key.get_pressed()
         move_multiplier = 1
 
-        if keys[pygame.K_z]:
-            move_multiplier = 2  # Увеличение скорости в два раза при зажатии клавиши 'z'
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            move_multiplier = 2
 
         if self.move_delay == 0:
             new_rect = self.rect.copy()
@@ -95,19 +138,17 @@ class Player(pygame.sprite.Sprite):
 
             if keys[pygame.K_q] and a == '1':
                 coordinates_p = []
-                # Проходим по каждой строке и ищем символ '+'
                 for row_index, line in enumerate(c):
                     for col_index, char in enumerate(line):
                         if char == '2':
-                            coordinates_p.append((row_index, col_index))  # Добавляем координаты в список
+                            coordinates_p.append((row_index, col_index))
                 new_rect.x, new_rect.y = coordinates_p[0][1] * 50, coordinates_p[0][0] * 50
             elif keys[pygame.K_e] and a == '2':
                 coordinates_m = []
-                # Проходим по каждой строке и ищем символ '-'
                 for row_index, line in enumerate(c):
                     for col_index, char in enumerate(line):
                         if char == '1':
-                            coordinates_m.append((row_index, col_index))  # Добавляем координаты в список
+                            coordinates_m.append((row_index, col_index))
                 new_rect.x, new_rect.y = coordinates_m[0][1] * 50, coordinates_m[0][0] * 50
 
             if message == 'up':
@@ -159,13 +200,45 @@ class Player(pygame.sprite.Sprite):
                     0 <= new_rect.top and new_rect.bottom <= screen.get_height():
                 self.rect = new_rect
 
+                for tile in tiles_group:
+                    if self.rect.colliderect(tile.rect) and tile.image_file and tile.image_file.startswith(
+                            'empty') and tile.image_file.endswith('.png'):
+                        if tile.image != empty_replacement_image:
+                            tile.image = empty_replacement_image
+                            self.score += 1
+                            conn = sqlite3.connect('data/project_play_bd.db')
+                            cursor = conn.cursor()
+                            cursor.execute('UPDATE players SET score = score + 1 WHERE player = ?', (login,))
+                            conn.commit()
+                            conn.close()
+
         if self.moving:
             self.frame += self.animation_speed
-            if self.frame >= len(self.images):
-                self.frame = 1
-            self.image = self.images[int(self.frame)]
+            if self.direction == 'up':
+                if self.frame >= len(self.walk_up_frames):
+                    self.frame = 0
+                self.image = self.walk_up_frames[int(self.frame)]
+            elif self.direction == 'down':
+                if self.frame >= len(self.walk_down_frames):
+                    self.frame = 0
+                self.image = self.walk_down_frames[int(self.frame)]
+            elif self.direction == 'left':
+                if self.frame >= len(self.walk_left_frames):
+                    self.frame = 0
+                self.image = self.walk_left_frames[int(self.frame)]
+            elif self.direction == 'right':
+                if self.frame >= len(self.walk_right_frames):
+                    self.frame = 0
+                self.image = self.walk_right_frames[int(self.frame)]
         else:
-            self.image = self.images[0]
+            if self.direction == 'up':
+                self.image = self.walk_up_frames[0]
+            elif self.direction == 'down':
+                self.image = self.walk_down_frames[0]
+            elif self.direction == 'left':
+                self.image = self.walk_left_frames[0]
+            elif self.direction == 'right':
+                self.image = self.walk_right_frames[0]
 
         if self.move_delay > 0:
             self.move_delay -= 1
@@ -223,9 +296,9 @@ def generate_level(level):
     l_points = []
     for y in range(len(level)):
         for x in range(len(level[y])):
-            # print(f"Обработка символа {level[y][x]} на позиции ({x}, {y})")
             if level[y][x] == '.':
-                Tile('empty', x, y)
+                tile_file = f'empty{(x + y) % 10}.png'
+                Tile('empty', x, y, tile_file)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
             elif level[y][x] == 'L':
@@ -290,10 +363,10 @@ def create_level_window(map_level, level):
                 conn = sqlite3.connect('data/project_play_bd.db')
                 cursor = conn.cursor()
                 cursor.execute(f'''
-                        UPDATE players
-                        SET {level} = 1
-                        WHERE player = '{login}'
-                    ''')  # изменяем прогресс уровня
+                    UPDATE players
+                    SET {level} = 1
+                    WHERE player = '{login}'
+                ''')
                 conn.commit()
                 conn.close()
             finih_window(win_text)
@@ -303,8 +376,7 @@ def create_level_window(map_level, level):
             finih_window(lose_text)
 
         for i in l_point:
-            if player.rect.colliderect(
-                    pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
+            if player.rect.colliderect(pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
                 finih_window(lose_text)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
@@ -315,8 +387,10 @@ def create_level_window(map_level, level):
             new_screen.blit(monster.image, monster.rect.topleft)
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
+
     pygame.quit()
     sys.exit()
+
 
 def draw_multiline_text(text, x, y, font, color):
     # Делим текст на строки
@@ -326,6 +400,7 @@ def draw_multiline_text(text, x, y, font, color):
         screen.blit(text_surface, (x, y))
         y += text_surface.get_height()  # Смещаем Y координату вниз на высоту строки
 
+
 def finih_window(text):
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Результат уровня")
@@ -333,12 +408,12 @@ def finih_window(text):
     text_result = ''
     color = None
     if text == 'win':
-        text_result = ('Поздравляем, вы усешно заверишил задание :)')
+        text_result = ('Поздравляем, вы успешно завершили задание :)')
         background_window = pygame.image.load('data/win_photo.jpeg')
         color = (0, 0, 255)
     elif text == 'loss':
-        background_window = pygame.image.load('data/loss_photo.jpeg')
-        text_result = ('К сожалению, вы не сравились с заданием :(')
+        background_window = pygame.image.load('data/lose_background.jpeg')  # Используем правильное имя файла
+        text_result = ('К сожалению, вы не справились с заданием :(')
         color = (255, 255, 255)
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
@@ -350,14 +425,13 @@ def finih_window(text):
     font = pygame.font.Font(None, 22)
 
     back_text = font.render('Вернуться к заданиям', True, (255, 255, 255))
-    finish_text = font.render('Завешить угру', True, (255, 255, 255))
+    finish_text = font.render('Завершить игру', True, (255, 255, 255))
 
     back = pygame.Rect(500, 575, button_image.get_width(), button_image.get_height())
     finish = pygame.Rect(500, 675, button_image.get_width(), button_image.get_height())
 
     # Основной игровой цикл
     running = True
-
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -379,11 +453,11 @@ def finih_window(text):
         new_screen.blit(button_image, finish.topleft)
 
         new_screen.blit(back_text, (back.x + (button_image.get_width() - back_text.get_width()) // 2,
-                                      back.y + (button_image.get_height() - back_text.get_height()) // 2))
+                                    back.y + (button_image.get_height() - back_text.get_height()) // 2))
         new_screen.blit(finish_text, (finish.x + (button_image.get_width() - finish_text.get_width()) // 2,
                                       finish.y + (button_image.get_height() - finish_text.get_height()) // 2))
         new_screen.blit(cursor, cursor_rect)
-        pygame.display.flip()  # Обновление экрана
+        pygame.display.flip()
     pygame.quit()
     sys.exit()
 
@@ -395,9 +469,9 @@ def create_new_window():
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
-    num_rectangles = 5 # количество рамочек
-    rect_width, rect_height = 720, 125 # размеры рамочек
-    start_y, spacing = 50, 12 # начальная позиция и промежуток между рамками
+    num_rectangles = 5  # количество рамочек
+    rect_width, rect_height = 720, 125  # размеры рамочек
+    start_y, spacing = 50, 12  # начальная позиция и промежуток между рамками
     conn = sqlite3.connect('data/project_play_bd.db')
     cur = conn.cursor()
     cur.execute('SELECT description FROM levels')
@@ -450,13 +524,85 @@ def create_new_window():
         for i in range(len(coord)):
             draw_multiline_text(long_text[i], coord[i][0], coord[i][1], font, (0, 0, 0))
 
-
         for i in range(5):
             new_screen.blit(button_image, list_button_rect[i].topleft)
             new_screen.blit(list_level_text[i],
                             (list_button_rect[i].x + (button_image.get_width() - list_level_text[i].get_width()) // 2,
-                             list_button_rect[i].y + (button_image.get_height() - list_level_text[i].get_height()) // 2))
+                             list_button_rect[i].y + (
+                                     button_image.get_height() - list_level_text[i].get_height()) // 2))
         new_screen.blit(cursor, cursor_rect)
+        pygame.display.flip()
+
+    pygame.quit()
+    sys.exit()
+
+
+def create_special_window():
+    special_screen = pygame.display.set_mode((750, 750))
+    pygame.display.set_caption("Специальное окно")
+    background_special = pygame.image.load('data/фон.jpg')
+    cursor_image = pygame.image.load('data/cursor.png')
+    cursor_rect = cursor_image.get_rect()
+    pygame.mouse.set_visible(False)
+
+    font = pygame.font.Font(None, 36)
+    large_font = pygame.font.Font(None, 48)
+
+    level_texts = []
+    score = 0
+
+    conn = sqlite3.connect('data/project_play_bd.db')
+    cur = conn.cursor()
+    cur.execute('SELECT score FROM players WHERE player = ?', (login,))
+    row = cur.fetchone()
+    if row:
+        score = row[0]
+
+    score_image = pygame.image.load('data/score_image.png')
+
+    for i, status in enumerate(level_list, 1):
+        if i <= 5:
+            status_text = 'Пройден' if status == 1 else 'Не пройден'
+            level_texts.append(f'Уровень {i}: {status_text}')
+
+    # Загрузка изображения кнопки и уменьшение её размера
+    button_image = pygame.image.load('data/button_start.png')
+    button_image = pygame.transform.scale(button_image, (200, 60))  # Уменьшение кнопки
+    button_rect = button_image.get_rect(topleft=(275, 650))
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if button_rect.collidepoint(event.pos):
+                    create_new_window()
+
+        cursor_rect.topleft = pygame.mouse.get_pos()
+        special_screen.blit(background_special, (0, 0))
+
+        text_surface = font.render(f'Имя пользователя: {login}', True, (0, 0, 0))
+        special_screen.blit(text_surface, (50, 20))
+
+        y_offset = 70
+        for line in level_texts:
+            text_surface = font.render(line, True, (0, 0, 0))
+            special_screen.blit(text_surface, (50, y_offset))
+            y_offset += text_surface.get_height() + 10
+
+        special_screen.blit(score_image, (50, y_offset))
+        text_surface = large_font.render(f': {score}', True, (0, 0, 0))
+        special_screen.blit(text_surface, (50 + score_image.get_width() + 10, y_offset + 5))
+        y_offset += score_image.get_height() + 10
+
+        # Отображение уменьшенной кнопки "Начать игру"
+        special_screen.blit(button_image, button_rect.topleft)
+        button_text = font.render("Начать игру", True, (255, 255, 255))
+        button_text_rect = button_text.get_rect(center=button_rect.center)
+        special_screen.blit(button_text, button_text_rect.topleft)
+
+        special_screen.blit(cursor_image, cursor_rect)
         pygame.display.flip()
 
     pygame.quit()
@@ -573,6 +719,10 @@ class StartForm(QtWidgets.QWidget):  # окно авторизации
                             178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
                             165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
                         create_new_window()
+                    elif (560 < cursor_rect.x < 605 and 305 < cursor_rect.y < 395 or
+                          552 < cursor_rect.x < 630 and 395 < cursor_rect.y < 485):
+                        # Код для открытия нового окна
+                        create_special_window()
 
                 cursor_rect.topleft = pygame.mouse.get_pos()
 
