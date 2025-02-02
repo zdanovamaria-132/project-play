@@ -121,6 +121,7 @@ class Player(pygame.sprite.Sprite):
         self.move_delay = 30
         self.moving = False
         self.score = 0  # Добавляем атрибут score для учета очков
+        print('создан персонаж')
 
     def update(self, message):
         keys = pygame.key.get_pressed()
@@ -407,13 +408,16 @@ def finih_window(text):
     background_window = None
     text_result = ''
     color = None
+    prof = None
     if text == 'win':
         text_result = ('Поздравляем, вы успешно завершили задание :)')
         background_window = pygame.image.load('data/win_photo.jpeg')
+        prof = pygame.image.load('data/иконка профиля черная.png')
         color = (0, 0, 255)
     elif text == 'loss':
         background_window = pygame.image.load('data/lose_background.jpeg')  # Используем правильное имя файла
         text_result = ('К сожалению, вы не справились с заданием :(')
+        prof = pygame.image.load('data/иконка профиля белая.png')
         color = (255, 255, 255)
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
@@ -421,6 +425,7 @@ def finih_window(text):
 
     button_image = pygame.image.load('data/кнопка_финиша.png')
     button_image = pygame.transform.scale(button_image, (200, 50))
+    prof = pygame.transform.scale(prof, (50, 50))
 
     font = pygame.font.Font(None, 22)
 
@@ -429,6 +434,7 @@ def finih_window(text):
 
     back = pygame.Rect(500, 575, button_image.get_width(), button_image.get_height())
     finish = pygame.Rect(500, 675, button_image.get_width(), button_image.get_height())
+    prof_btn = pygame.Rect(690, 5, prof.get_width(), prof.get_height())
 
     # Основной игровой цикл
     running = True
@@ -443,8 +449,11 @@ def finih_window(text):
                     # Завершение Pygame
                     pygame.quit()
                     sys.exit()
+                elif prof_btn.collidepoint(event.pos):
+                    create_special_window()
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.blit(background_window, (0, 0))
+        new_screen.blit(prof, (690, 5))
 
         # Отображение текста
         font = pygame.font.Font(None, 36)
@@ -466,6 +475,7 @@ def create_new_window():
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Выбор уровня")
     background_window2 = pygame.image.load('data/фон.jpg')
+    prof = pygame.image.load('data/иконка профиля черная.png')
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
@@ -495,6 +505,7 @@ def create_new_window():
                         pygame.Rect(500, 340, button_image.get_width(), button_image.get_height()),
                         pygame.Rect(500, 475, button_image.get_width(), button_image.get_height()),
                         pygame.Rect(500, 615, button_image.get_width(), button_image.get_height())]
+    prof_btn = pygame.Rect(690, 5, prof.get_width(), prof.get_height())
     global level
     running = True
     while running:
@@ -511,10 +522,13 @@ def create_new_window():
                 elif list_button_rect[2].collidepoint(event.pos):
                     level = 'level3.txt'
                     create_level_window('level3.txt', 'level3')
+                elif prof_btn.collidepoint(event.pos):
+                    create_special_window()
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.blit(background_window2, (0, 0))
         draw_multiline_text('Прежде чем отправиться в путь выбери задание', 20, 5, font,
                             (0, 0, 0))
+        new_screen.blit(prof, (690, 5))
         coord = []
         for i in range(num_rectangles):
             # Вычисляем позицию рамки
