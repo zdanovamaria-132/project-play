@@ -38,6 +38,7 @@ def load_images_from_folder(folder):
 tile_images = {
     'wall': load_images_from_folder('data/walls'),
     'empty': load_images_from_folder('data/empty'),
+    'l': load_images_from_folder('data'),
     'teleport_e': load_images_from_folder('data/teleport_e'),
     'teleport_q': load_images_from_folder('data/teleport_q')
 }
@@ -303,7 +304,8 @@ def generate_level(level):
             elif level[y][x] == '#':
                 Tile('wall', x, y)
             elif level[y][x] == 'L':
-                Tile('empty', x, y)
+                tile_file = f'empty{(x + y) % 10}.png'
+                Tile('empty', x, y, tile_file)
                 l_points.append((x, y))
             elif level[y][x] == '@':
                 Tile('empty', x, y)
@@ -332,9 +334,9 @@ def create_level_window(map_level, level):
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
-
+    start_time = None
+    count_l = 0
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
-
     win_text = 'win'
     lose_text = "loss"
 
@@ -352,6 +354,29 @@ def create_level_window(map_level, level):
                     player.update('right')
                 if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     player.update('left')
+                if event.key == pygame.K_t:
+                    if count_l != 5:
+                        start_time = pygame.time.get_ticks()
+                        for i in l_point:
+                            if ((i[0] * 50 >= player.rect.x - 200 and i[0] * 50 <= player.rect.x + 200)
+                                    and (i[1] * 50 >= player.rect.y - 200 and i[1] * 50 <= player.rect.y + 200)):
+                                Tile('l', i[0], i[1], 'emptyl.png')
+                            else:
+                                tile_file = f'empty{(i[0] + i[1]) % 10}.png'
+                                Tile('empty', i[0], i[1], tile_file)
+                        count_l += 1
+                    else:
+                        print('лимит исчерпан')
+
+        if start_time is not None:
+            elapsed_time = pygame.time.get_ticks() - start_time
+            if elapsed_time >= 3000:
+                print('время вышло')
+                # Здесь можно делать то, что нужно каждые 5 секунд
+                for i in l_point:
+                    tile_file = f'empty{(i[0] + i[1]) % 10}.png'
+                    Tile('empty', i[0], i[1], tile_file)
+                start_time = None  # Сбрасываем время, чтобы не выполнять заново
 
         player_group.update('')
         if monster:
