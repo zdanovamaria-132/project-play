@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QMessageBox
 login = ""  # переменная для хранения имя пользователя
 level_list = []  # для хранения прогресса уровня: 0 не пройден, 1 пройден
 pygame.init()
-
+level = ''
 screen = None  # для экрана
 
 background_window1 = pygame.image.load('data/background/background_window1.png')
@@ -132,7 +132,7 @@ class Player(pygame.sprite.Sprite):
         if self.move_delay == 0:
             new_rect = self.rect.copy()
             step_size = tile_width
-            c = load_level('level1.txt')
+            c = load_level(level)
             a = c[new_rect.y // 50][new_rect.x // 50]
             self.moving = False
 
@@ -495,7 +495,7 @@ def create_new_window():
                         pygame.Rect(500, 340, button_image.get_width(), button_image.get_height()),
                         pygame.Rect(500, 475, button_image.get_width(), button_image.get_height()),
                         pygame.Rect(500, 615, button_image.get_width(), button_image.get_height())]
-
+    global level
     running = True
     while running:
         for event in pygame.event.get():
@@ -503,10 +503,13 @@ def create_new_window():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if list_button_rect[0].collidepoint(event.pos):
+                    level = 'level1.txt'
                     create_level_window('level1.txt', 'level1')
                 elif list_button_rect[1].collidepoint(event.pos):
+                    level = 'level2.txt'
                     create_level_window('level2.txt', 'level2')
                 elif list_button_rect[2].collidepoint(event.pos):
+                    level = 'level3.txt'
                     create_level_window('level3.txt', 'level3')
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.blit(background_window2, (0, 0))
