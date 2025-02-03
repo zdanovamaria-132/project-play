@@ -1,4 +1,5 @@
 import pygame
+import math
 import sys
 import os
 import random
@@ -259,7 +260,7 @@ class Monster(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.image = pygame.image.load('data/monster.png')
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        self.speed = 0.5
+        self.speed = 0.6
         print(f"Монстр создан на позиции ({pos_x}, {pos_y})")
 
     def update(self, player):
@@ -294,7 +295,7 @@ def generate_level(level):
     new_player, x, y = None, None, None
     teleport_points = {}
     win_point = None
-    monster = None
+    monster = []
     l_points = []
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -321,15 +322,16 @@ def generate_level(level):
                 win_point = (x, y)
             elif level[y][x] == 'M':
                 Tile('empty', x, y)
-                monster = Monster(x, y)
-                all_sprites.add(monster)  # Добавляем монстра в группу спрайтов
+                m = Monster(x, y)
+                monster.append(m)
+                all_sprites.add(m)  # Добавляем монстра в группу спрайтов
                 print("Монстр добавлен в группу спрайтов")
     print(f"Монстр: {monster}")
     return new_player, teleport_points, win_point, monster, l_points
 
 
 def create_level_window(map_level, level):
-    new_screen = pygame.display.set_mode((750, 750))
+    new_screen = pygame.display.set_mode((850, 850))
     pygame.display.set_caption("Уровень")
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
@@ -344,6 +346,7 @@ def create_level_window(map_level, level):
     player_group.empty()
 
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
+    print(monster)
     win_text = 'win'
     lose_text = "loss"
 
@@ -386,8 +389,9 @@ def create_level_window(map_level, level):
                 start_time = None  # Сбрасываем время, чтобы не выполнять заново
 
         player_group.update('')
-        if monster:
-            monster.update(player)
+        for i in monster:
+            if i:
+                i.update(player)
 
         # Логика победы
         if player.rect.colliderect(
@@ -405,19 +409,23 @@ def create_level_window(map_level, level):
             finih_window(win_text)
 
         # Логика проигрыша
-        if monster and player.rect.colliderect(monster.rect):
-            finih_window(lose_text)
+        for i in monster:
+            if i and player.rect.colliderect(i.rect):
+                print('вас убил монстр')
+                finih_window(lose_text)
 
         for i in l_point:
             if player.rect.colliderect(pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
+                print('вы попали в ловушку')
                 finih_window(lose_text)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
         tiles_group.draw(new_screen)
         player_group.draw(new_screen)
-        if monster:
-            new_screen.blit(monster.image, monster.rect.topleft)
+        for i in monster:
+            if i:
+                new_screen.blit(i.image, i.rect.topleft)
         new_screen.blit(cursor, cursor_rect)
         pygame.display.flip()
 
