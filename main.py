@@ -44,12 +44,6 @@ tile_images = {
     'teleport_q': load_images_from_folder('data/teleport_q')
 }
 
-player_images = [
-    pygame.image.load('data/player_walk1.png'),
-    pygame.image.load('data/player_walk2.png'),
-    pygame.image.load('data/player_walk3.png')
-]
-
 tile_width = tile_height = 50
 
 # Определение групп спрайтов
@@ -255,40 +249,94 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
+def load_sprite_sheet(sheet, frame_width, frame_height, num_frames, row):
+    frames = []
+    sheet_width, sheet_height = sheet.get_size()
+    if row * frame_height >= sheet_height:
+        raise ValueError("Row outside surface area")
+    for x in range(num_frames):
+        if x * frame_width >= sheet_width:
+            raise ValueError("Frame outside surface area")
+        frame = sheet.subsurface(pygame.Rect(x * frame_width, row * frame_height, frame_width, frame_height))
+        frames.append(frame)
+    return frames
+
+
+def load_monster_spritesheets():
+    monster_spritesheets = []
+    for i in range(1, 3):  # Загружаем только два файла
+        spritesheet = pygame.image.load(f'data/monster_spritesheet_{i}.png')
+        if i == 1:
+            frames = {
+                'down': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=0),
+                'left': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=1),
+                'right': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=2),
+                'up': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=3)
+            }
+        else:
+            frames = {
+                'down': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=0),
+                'left': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=1),
+                'right': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=2),
+                'up': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=3)
+            }
+        monster_spritesheets.append(frames)
+    return monster_spritesheets
+
+
+# Загрузка спрайтовых листов для монстров
+monster_spritesheets = load_monster_spritesheets()
+
+
 class Monster(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites)
-        self.image = pygame.image.load('data/monster.png')
+        self.frames = random.choice(monster_spritesheets)
+        self.image = self.frames['down'][0]  # Начальная анимация вниз
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        self.speed = 0.6
+        self.speed = 1
+        self.frame = 0
+        self.animation_speed = 0.1
+        self.direction = random.choice(['left', 'right', 'up', 'down'])
         print(f"Монстр создан на позиции ({pos_x}, {pos_y})")
 
     def update(self, player):
         new_rect = self.rect.copy()
-        if abs(self.rect.x - player.rect.x) > abs(self.rect.y - player.rect.y):
-            if self.rect.x < player.rect.x:
-                new_rect.x += self.speed
-            elif self.rect.x > player.rect.x:
-                new_rect.x -= self.speed
-        elif abs(self.rect.x - player.rect.x) < abs(self.rect.y - player.rect.y):
-            if self.rect.y < player.rect.y:
-                new_rect.y += self.speed
-            elif self.rect.y > player.rect.y:
-                new_rect.y -= self.speed
-        else:
-            if self.rect.x < player.rect.x:
-                new_rect.x += self.speed
-            elif self.rect.x > player.rect.x:
-                new_rect.x -= self.speed
-            if self.rect.y < player.rect.y:
-                new_rect.y += self.speed
-            elif self.rect.y > player.rect.y:
-                new_rect.y -= self.speed
+
+        if self.direction == 'left':
+            new_rect.x -= self.speed
+        elif self.direction == 'right':
+            new_rect.x += self.speed
+        elif self.direction == 'up':
+            new_rect.y -= self.speed
+        elif self.direction == 'down':
+            new_rect.y += self.speed
 
         # Проверка на столкновение со стенами
         collision = any(new_rect.colliderect(wall.rect) for wall in walls_group if wall.type == 'wall')
-        if not collision:
+        if collision:
+            self.direction = random.choice(['left', 'right', 'up', 'down'])  # Меняем направление при столкновении
+        else:
             self.rect = new_rect
+
+        # Анимация монстра в зависимости от направления
+        self.frame += self.animation_speed
+        if self.direction == 'left':
+            if self.frame >= len(self.frames['left']):
+                self.frame = 0
+            self.image = self.frames['left'][int(self.frame)]
+        elif self.direction == 'right':
+            if self.frame >= len(self.frames['right']):
+                self.frame = 0
+            self.image = self.frames['right'][int(self.frame)]
+        elif self.direction == 'up':
+            if self.frame >= len(self.frames['up']):
+                self.frame = 0
+            self.image = self.frames['up'][int(self.frame)]
+        elif self.direction == 'down':
+            if self.frame >= len(self.frames['down']):
+                self.frame = 0
+            self.image = self.frames['down'][int(self.frame)]
 
 
 def generate_level(level):
