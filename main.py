@@ -336,6 +336,13 @@ def create_level_window(map_level, level):
     pygame.mouse.set_visible(False)
     start_time = None
     count_l = 0
+
+    # Очистка всех групп спрайтов перед загрузкой нового уровня
+    all_sprites.empty()
+    tiles_group.empty()
+    walls_group.empty()
+    player_group.empty()
+
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
     win_text = 'win'
     lose_text = "loss"
