@@ -117,14 +117,13 @@ class Player(pygame.sprite.Sprite):
         self.move_delay = 30
         self.moving = False
         self.score = 0  # Добавляем атрибут score для учета очков
+        self.speed = 1  # Начальная скорость
+        self.default_speed = 1  # Сохранение начальной скорости
         print('создан персонаж')
 
     def update(self, message):
         keys = pygame.key.get_pressed()
-        move_multiplier = 1
-
-        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-            move_multiplier = 2
+        move_multiplier = self.speed  # Используем текущую скорость для умножения
 
         if self.move_delay == 0:
             new_rect = self.rect.copy()
@@ -398,50 +397,49 @@ def create_level_window(map_level, level):
     win_text = 'win'
     lose_text = "loss"
 
+    speed_bar = SpeedBar(max_speed=100, fill_time=7, drain_time=4, width=200, height=20, x=325, y=800)
+    accelerating = False
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP or event.key == pygame.K_w:
-                    player.update('up')
-                if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    player.update('down')
-                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    player.update('right')
-                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    player.update('left')
-                if event.key == pygame.K_t:
-                    if count_l != 5:
-                        start_time = pygame.time.get_ticks()
-                        for i in l_point:
-                            if ((i[0] * 50 >= player.rect.x - 200 and i[0] * 50 <= player.rect.x + 200)
-                                    and (i[1] * 50 >= player.rect.y - 200 and i[1] * 50 <= player.rect.y + 200)):
-                                Tile('l', i[0], i[1], 'emptyl.png')
-                            else:
-                                tile_file = f'empty{(i[0] + i[1]) % 10}.png'
-                                Tile('empty', i[0], i[1], tile_file)
-                        count_l += 1
-                    else:
-                        print('лимит исчерпан')
+                if event.key in (
+                        pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d, pygame.K_LEFT,
+                        pygame.K_a):
+                    if event.key == pygame.K_UP or event.key == pygame.K_w:
+                        player.update('up')
+                    if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                        player.update('down')
+                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                        player.update('right')
+                    if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                        player.update('left')
+                if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+                    if speed_bar.current_speed > 0:
+                        accelerating = True
+                        player.speed = 2
+            elif event.type == pygame.KEYUP:
+                if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+                    accelerating = False
+                    player.speed = player.default_speed
 
         if start_time is not None:
             elapsed_time = pygame.time.get_ticks() - start_time
             if elapsed_time >= 3000:
                 print('время вышло')
-                # Здесь можно делать то, что нужно каждые 5 секунд
                 for i in l_point:
                     tile_file = f'empty{(i[0] + i[1]) % 10}.png'
                     Tile('empty', i[0], i[1], tile_file)
-                start_time = None  # Сбрасываем время, чтобы не выполнять заново
+                start_time = None
 
         player_group.update('')
         for i in monster:
             if i:
                 i.update(player)
 
-        # Логика победы
         if player.rect.colliderect(
                 pygame.Rect(win_point[0] * tile_width, win_point[1] * tile_height, tile_width, tile_height)):
             if level_list[int(level[-1]) - 1] == 0:
@@ -456,7 +454,6 @@ def create_level_window(map_level, level):
                 conn.close()
             finih_window(win_text)
 
-        # Логика проигрыша
         for i in monster:
             if i and player.rect.colliderect(i.rect):
                 print('вас убил монстр')
@@ -475,6 +472,19 @@ def create_level_window(map_level, level):
             if i:
                 new_screen.blit(i.image, i.rect.topleft)
         new_screen.blit(cursor, cursor_rect)
+
+        # Обновляем шкалу ускорения
+        speed_bar.update(accelerating)
+
+        # Проверяем и обновляем состояние ускорения
+        if accelerating and speed_bar.current_speed > 0:
+            speed_bar.update(True)  # Понижаем шкалу ускорения
+        else:
+            player.speed = player.default_speed  # Возвращаем нормальную скорость, если не ускоряемся
+
+        # Рисуем шкалу ускорения
+        speed_bar.draw(new_screen)
+
         pygame.display.flip()
 
     pygame.quit()
@@ -488,6 +498,33 @@ def draw_multiline_text(text, x, y, font, color):
         text_surface = font.render(line, True, color)
         screen.blit(text_surface, (x, y))
         y += text_surface.get_height()  # Смещаем Y координату вниз на высоту строки
+
+
+class SpeedBar:
+    def __init__(self, max_speed, fill_time, drain_time, width, height, x, y):
+        self.max_speed = max_speed
+        self.current_speed = max_speed  # Начальная шкала заполнена
+        self.fill_time = fill_time
+        self.drain_time = drain_time
+        self.width = width
+        self.height = height
+        self.x = x
+        self.y = y
+        self.fill_rate = max_speed / (fill_time * 60)  # Переводим время в кадры (при 60 FPS)
+        self.drain_rate = max_speed / (drain_time * 60)
+
+    def update(self, accelerating):
+        if accelerating and self.current_speed > 0:
+            self.current_speed -= self.drain_rate
+        elif not accelerating and self.current_speed < self.max_speed:
+            self.current_speed += self.fill_rate
+
+    def draw(self, screen):
+        # Рисуем рамку шкалы
+        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.width, self.height), 2)
+        # Заполняем шкалу в зависимости от текущего уровня скорости
+        inner_width = (self.current_speed / self.max_speed) * self.width
+        pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, inner_width, self.height))
 
 
 def finih_window(text):
