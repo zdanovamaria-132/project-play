@@ -329,8 +329,6 @@ def create_level_window(map_level, level, level_file):
     player_group.empty()
 
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
-    win_text = 'win'
-    lose_text = "loss"
     count_l = 0
 
     speed_bar = SpeedBar(max_speed=100, fill_time=7, drain_time=4, width=200, height=20, x=325, y=800)
@@ -406,19 +404,19 @@ def create_level_window(map_level, level, level_file):
                 conn.commit()
                 conn.close()
                 level_list[int(level[-1]) - 1] = 1
-            finish_window(win_text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
+            finish_window('win', draw_multiline_text, login, level_list, create_level_window, create_new_window,
                   create_special_window)
 
         for i in monster:
             if i and player.rect.colliderect(i.rect):
                 print('вас убил монстр')
-                finish_window(lose_text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
+                finish_window('loss_m', draw_multiline_text, login, level_list, create_level_window, create_new_window,
                   create_special_window)
 
         for i in l_point:
             if player.rect.colliderect(pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
                 print('вы попали в ловушку')
-                finish_window(lose_text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
+                finish_window('loss_l', draw_multiline_text, login, level_list, create_level_window, create_new_window,
                   create_special_window)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
