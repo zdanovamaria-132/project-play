@@ -5,7 +5,8 @@ import sqlite3
 text_ability = ('''Способности:
 1.Обнаружение ловушек: возможно 5 раз(клавиша t)
 2.Увеличение скорости: возможно несколько секунд, 
-                    самовостанавливается(клавиша SHIFT)''')
+                    самовостанавливается(клавиша SHIFT)
+3.Телепорация: фиолетовый телепорт кнопка Q, синий Е''')
 
 def create_special_window(login, level_list, create_level_window, draw_multiline_text, create_new_window):
     special_screen = pygame.display.set_mode((750, 750))
@@ -75,7 +76,7 @@ def create_special_window(login, level_list, create_level_window, draw_multiline
         special_screen.blit(text_rang, (210, 170))
         draw_multiline_text(text_ability, 10, 230, font, (0, 0, 0))
 
-        y_offset = 350
+        y_offset = 400
         for line in level_texts:
             text_surface = font.render(line, True, (0, 0, 0))
             special_screen.blit(text_surface, (10, y_offset))
