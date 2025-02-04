@@ -52,6 +52,12 @@ def create_new_window(login, level_list, create_level_window, draw_multiline_tex
                 elif list_button_rect[2].collidepoint(event.pos):
                     level = 'level3.txt'
                     create_level_window('level3.txt', 'level3', level)
+                elif list_button_rect[3].collidepoint(event.pos):
+                    level = 'level4.txt'
+                    create_level_window('level4.txt', 'level4', level)
+                elif list_button_rect[4].collidepoint(event.pos):
+                    level = 'level5.txt'
+                    create_level_window('level5.txt', 'level5', level)
                 elif prof_btn.collidepoint(event.pos):
                     create_special_window(login, level_list, create_level_window, draw_multiline_text,
                                           create_new_window)
