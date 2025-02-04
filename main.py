@@ -1,17 +1,19 @@
 import pygame
-import math
 import sys
-import os
 import random
 from PyQt6 import QtWidgets, uic
 import sqlite3
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QMessageBox
+from finish_window import finish_window
+from create_special_window import create_special_window
+from create_new_window import create_new_window
+from load import load_level, load_images_from_folder, load_sprite_sheet, load_monster_spritesheets
 
 login = ""  # переменная для хранения имя пользователя
 level_list = []  # для хранения прогресса уровня: 0 не пройден, 1 пройден
 pygame.init()
-level = ''
+levelg = ''
 screen = None  # для экрана
 
 background_window1 = pygame.image.load('data/background/background_window1.png')
@@ -22,18 +24,6 @@ cursor = pygame.image.load('data/cursor.png')
 cursor_rect = cursor.get_rect()
 
 pygame.mouse.set_visible(False)
-
-
-def load_images_from_folder(folder):
-    if not os.path.exists(folder):
-        raise FileNotFoundError(f"Папка '{folder}' не найдена.")
-    images = {}
-    for filename in os.listdir(folder):
-        if filename.endswith('.png'):
-            images[filename] = pygame.image.load(os.path.join(folder, filename))
-    if not images:
-        raise FileNotFoundError(f"Нет изображений в папке '{folder}'.")
-    return images
 
 
 tile_images = {
@@ -73,18 +63,6 @@ empty_image = pygame.image.load('data/empty/empty.png')
 # Загрузка изображений empty1.png, empty2.png и т.д.
 empty_images = [pygame.image.load(f'data/empty/empty{i}.png') for i in range(1, 10)]
 empty_replacement_image = pygame.image.load('data/empty/empty.png')
-
-
-def load_sprite_sheet(sheet, frame_width, frame_height, num_frames, row):
-    frames = []
-    sheet_width, sheet_height = sheet.get_size()
-    for x in range(num_frames):
-        if x * frame_width < sheet_width and row * frame_height < sheet_height:
-            frame = sheet.subsurface(pygame.Rect(x * frame_width, row * frame_height, frame_width, frame_height))
-            frames.append(frame)
-        else:
-            raise ValueError("Subsurface rectangle outside surface area")
-    return frames
 
 
 # Загрузка спрайтового листа
@@ -128,7 +106,7 @@ class Player(pygame.sprite.Sprite):
         if self.move_delay == 0:
             new_rect = self.rect.copy()
             step_size = tile_width
-            c = load_level(level)
+            c = load_level(levelg)
             a = c[new_rect.y // 50][new_rect.x // 50]
             self.moving = False
 
@@ -240,49 +218,6 @@ class Player(pygame.sprite.Sprite):
             self.move_delay -= 1
 
 
-def load_level(filename):
-    filename = "data/" + filename
-    with open(filename, 'r', encoding='utf-8') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
-
-
-def load_sprite_sheet(sheet, frame_width, frame_height, num_frames, row):
-    frames = []
-    sheet_width, sheet_height = sheet.get_size()
-    if row * frame_height >= sheet_height:
-        raise ValueError("Row outside surface area")
-    for x in range(num_frames):
-        if x * frame_width >= sheet_width:
-            raise ValueError("Frame outside surface area")
-        frame = sheet.subsurface(pygame.Rect(x * frame_width, row * frame_height, frame_width, frame_height))
-        frames.append(frame)
-    return frames
-
-
-def load_monster_spritesheets():
-    monster_spritesheets = []
-    for i in range(1, 3):  # Загружаем только два файла
-        spritesheet = pygame.image.load(f'data/monster_spritesheet_{i}.png')
-        if i == 1:
-            frames = {
-                'down': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=0),
-                'left': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=1),
-                'right': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=2),
-                'up': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=4, row=3)
-            }
-        else:
-            frames = {
-                'down': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=0),
-                'left': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=1),
-                'right': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=2),
-                'up': load_sprite_sheet(spritesheet, frame_width=50, frame_height=50, num_frames=3, row=3)
-            }
-        monster_spritesheets.append(frames)
-    return monster_spritesheets
-
-
 # Загрузка спрайтовых листов для монстров
 monster_spritesheets = load_monster_spritesheets()
 
@@ -377,14 +312,15 @@ def generate_level(level):
     return new_player, teleport_points, win_point, monster, l_points
 
 
-def create_level_window(map_level, level):
+def create_level_window(map_level, level, level_file):
+    global levelg
+    levelg = level_file
     new_screen = pygame.display.set_mode((850, 850))
     pygame.display.set_caption("Уровень")
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
     start_time = None
-    count_l = 0
 
     # Очистка всех групп спрайтов перед загрузкой нового уровня
     all_sprites.empty()
@@ -393,7 +329,6 @@ def create_level_window(map_level, level):
     player_group.empty()
 
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
-    print(monster)
     win_text = 'win'
     lose_text = "loss"
 
@@ -455,17 +390,20 @@ def create_level_window(map_level, level):
                 conn.commit()
                 conn.close()
                 level_list[int(level[-1]) - 1] = 1
-            finih_window(win_text)
+            finish_window(win_text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
+                  create_special_window)
 
         for i in monster:
             if i and player.rect.colliderect(i.rect):
                 print('вас убил монстр')
-                finih_window(lose_text)
+                finish_window(lose_text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
+                  create_special_window)
 
         for i in l_point:
             if player.rect.colliderect(pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
                 print('вы попали в ловушку')
-                finih_window(lose_text)
+                finish_window(lose_text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
+                  create_special_window)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
@@ -528,230 +466,6 @@ class SpeedBar:
         # Заполняем шкалу в зависимости от текущего уровня скорости
         inner_width = (self.current_speed / self.max_speed) * self.width
         pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, inner_width, self.height))
-
-
-def finih_window(text):
-    new_screen = pygame.display.set_mode((750, 750))
-    pygame.display.set_caption("Результат уровня")
-    background_window = None
-    text_result = ''
-    color = None
-    prof = None
-    if text == 'win':
-        text_result = ('Поздравляем, вы успешно завершили задание :)')
-        background_window = pygame.image.load('data/win_photo.jpeg')
-        prof = pygame.image.load('data/иконка профиля черная.png')
-        color = (0, 0, 255)
-    elif text == 'loss':
-        background_window = pygame.image.load('data/lose_background.jpeg')  # Используем правильное имя файла
-        text_result = ('К сожалению, вы не справились с заданием :(')
-        prof = pygame.image.load('data/иконка профиля белая.png')
-        color = (255, 255, 255)
-    cursor = pygame.image.load('data/cursor.png')
-    cursor_rect = cursor.get_rect()
-    pygame.mouse.set_visible(False)
-
-    button_image = pygame.image.load('data/кнопка_финиша.png')
-    button_image = pygame.transform.scale(button_image, (200, 50))
-    prof = pygame.transform.scale(prof, (50, 50))
-
-    font = pygame.font.Font(None, 22)
-
-    back_text = font.render('Вернуться к заданиям', True, (255, 255, 255))
-    finish_text = font.render('Завершить игру', True, (255, 255, 255))
-
-    back = pygame.Rect(500, 575, button_image.get_width(), button_image.get_height())
-    finish = pygame.Rect(500, 675, button_image.get_width(), button_image.get_height())
-    prof_btn = pygame.Rect(690, 5, prof.get_width(), prof.get_height())
-
-    # Основной игровой цикл
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False  # Устанавливаем флаг, что окно закрылось
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if back.collidepoint(event.pos):
-                    create_new_window()
-                elif finish.collidepoint(event.pos):
-                    # Завершение Pygame
-                    pygame.quit()
-                    sys.exit()
-                elif prof_btn.collidepoint(event.pos):
-                    create_special_window()
-        cursor_rect.topleft = pygame.mouse.get_pos()
-        new_screen.blit(background_window, (0, 0))
-        new_screen.blit(prof, (690, 5))
-
-        # Отображение текста
-        font = pygame.font.Font(None, 36)
-        draw_multiline_text(text_result, 100, 750 // 2, font, color)
-        new_screen.blit(button_image, back.topleft)
-        new_screen.blit(button_image, finish.topleft)
-
-        new_screen.blit(back_text, (back.x + (button_image.get_width() - back_text.get_width()) // 2,
-                                    back.y + (button_image.get_height() - back_text.get_height()) // 2))
-        new_screen.blit(finish_text, (finish.x + (button_image.get_width() - finish_text.get_width()) // 2,
-                                      finish.y + (button_image.get_height() - finish_text.get_height()) // 2))
-        new_screen.blit(cursor, cursor_rect)
-        pygame.display.flip()
-    pygame.quit()
-    sys.exit()
-
-
-def create_new_window():
-    new_screen = pygame.display.set_mode((750, 750))
-    pygame.display.set_caption("Выбор уровня")
-    background_window2 = pygame.image.load('data/фон.jpg')
-    prof = pygame.image.load('data/иконка профиля черная.png')
-    cursor = pygame.image.load('data/cursor.png')
-    cursor_rect = cursor.get_rect()
-    pygame.mouse.set_visible(False)
-    num_rectangles = 5  # количество рамочек
-    rect_width, rect_height = 720, 125  # размеры рамочек
-    start_y, spacing = 50, 12  # начальная позиция и промежуток между рамками
-    conn = sqlite3.connect('data/project_play_bd.db')
-    cur = conn.cursor()
-    cur.execute('SELECT description FROM levels')
-    rows = cur.fetchall()
-    long_text = [i[0] for i in rows]
-
-    button_image = pygame.image.load('data/кнопка.png')
-    button_image = pygame.transform.scale(button_image, (200, 100))
-
-    font = pygame.font.Font(None, 36)
-    # заносим прогресс прохождения уровней в список
-    list_level_text = []
-    for i in level_list:
-        if i == 0:
-            list_level_text.append(font.render('Не пройден', True, (0, 0, 0)))
-        elif i == 1:
-            list_level_text.append(font.render('Пройден', True, (0, 0, 0)))
-
-    list_button_rect = [pygame.Rect(500, 60, button_image.get_width(), button_image.get_height()),
-                        pygame.Rect(500, 200, button_image.get_width(), button_image.get_height()),
-                        pygame.Rect(500, 340, button_image.get_width(), button_image.get_height()),
-                        pygame.Rect(500, 475, button_image.get_width(), button_image.get_height()),
-                        pygame.Rect(500, 615, button_image.get_width(), button_image.get_height())]
-    prof_btn = pygame.Rect(690, 5, prof.get_width(), prof.get_height())
-    global level
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if list_button_rect[0].collidepoint(event.pos):
-                    level = 'level1.txt'
-                    create_level_window('level1.txt', 'level1')
-                elif list_button_rect[1].collidepoint(event.pos):
-                    level = 'level2.txt'
-                    create_level_window('level2.txt', 'level2')
-                elif list_button_rect[2].collidepoint(event.pos):
-                    level = 'level3.txt'
-                    create_level_window('level3.txt', 'level3')
-                elif prof_btn.collidepoint(event.pos):
-                    create_special_window()
-        cursor_rect.topleft = pygame.mouse.get_pos()
-        new_screen.blit(background_window2, (0, 0))
-        draw_multiline_text('Прежде чем отправиться в путь выбери задание', 20, 5, font,
-                            (0, 0, 0))
-        new_screen.blit(prof, (690, 5))
-        coord = []
-        for i in range(num_rectangles):
-            # Вычисляем позицию рамки
-            x = (750 - rect_width) // 2  # Центруем по горизонтали
-            y = start_y + i * (rect_height + spacing)
-
-            # Рисуем рамку
-            pygame.draw.rect(new_screen, '#38130cff', (x, y, rect_width, rect_height), 2)
-            coord.append((x + 5, y + 3))
-        for i in range(len(coord)):
-            draw_multiline_text(long_text[i], coord[i][0], coord[i][1], font, (0, 0, 0))
-
-        for i in range(5):
-            new_screen.blit(button_image, list_button_rect[i].topleft)
-            new_screen.blit(list_level_text[i],
-                            (list_button_rect[i].x + (button_image.get_width() - list_level_text[i].get_width()) // 2,
-                             list_button_rect[i].y + (
-                                     button_image.get_height() - list_level_text[i].get_height()) // 2))
-        new_screen.blit(cursor, cursor_rect)
-        pygame.display.flip()
-
-    pygame.quit()
-    sys.exit()
-
-
-def create_special_window():
-    special_screen = pygame.display.set_mode((750, 750))
-    pygame.display.set_caption("Специальное окно")
-    background_special = pygame.image.load('data/фон.jpg')
-    cursor_image = pygame.image.load('data/cursor.png')
-    cursor_rect = cursor_image.get_rect()
-    pygame.mouse.set_visible(False)
-
-    font = pygame.font.Font(None, 36)
-    large_font = pygame.font.Font(None, 48)
-
-    level_texts = []
-    score = 0
-
-    conn = sqlite3.connect('data/project_play_bd.db')
-    cur = conn.cursor()
-    cur.execute('SELECT score FROM players WHERE player = ?', (login,))
-    row = cur.fetchone()
-    if row:
-        score = row[0]
-
-    score_image = pygame.image.load('data/score_image.png')
-
-    for i, status in enumerate(level_list, 1):
-        if i <= 5:
-            status_text = 'Пройден' if status == 1 else 'Не пройден'
-            level_texts.append(f'Уровень {i}: {status_text}')
-
-    # Загрузка изображения кнопки и уменьшение её размера
-    button_image = pygame.image.load('data/button_start.png')
-    button_image = pygame.transform.scale(button_image, (200, 60))  # Уменьшение кнопки
-    button_rect = button_image.get_rect(topleft=(275, 650))
-
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if button_rect.collidepoint(event.pos):
-                    create_new_window()
-
-        cursor_rect.topleft = pygame.mouse.get_pos()
-        special_screen.blit(background_special, (0, 0))
-
-        text_surface = font.render(f'Имя пользователя: {login}', True, (0, 0, 0))
-        special_screen.blit(text_surface, (50, 20))
-
-        y_offset = 70
-        for line in level_texts:
-            text_surface = font.render(line, True, (0, 0, 0))
-            special_screen.blit(text_surface, (50, y_offset))
-            y_offset += text_surface.get_height() + 10
-
-        special_screen.blit(score_image, (50, y_offset))
-        text_surface = large_font.render(f': {score}', True, (0, 0, 0))
-        special_screen.blit(text_surface, (50 + score_image.get_width() + 10, y_offset + 5))
-        y_offset += score_image.get_height() + 10
-
-        # Отображение уменьшенной кнопки "Начать игру"
-        special_screen.blit(button_image, button_rect.topleft)
-        button_text = font.render("Начать игру", True, (255, 255, 255))
-        button_text_rect = button_text.get_rect(center=button_rect.center)
-        special_screen.blit(button_text, button_text_rect.topleft)
-
-        special_screen.blit(cursor_image, cursor_rect)
-        pygame.display.flip()
-
-    pygame.quit()
-    sys.exit()
 
 
 class RegistrationForm(QtWidgets.QWidget):
@@ -863,11 +577,13 @@ class StartForm(QtWidgets.QWidget):  # окно авторизации
                     if (249 < cursor_rect.x < 319 and 510 < cursor_rect.y < 560 or
                             178 < cursor_rect.x < 313 and 560 < cursor_rect.y < 615 or
                             165 < cursor_rect.x < 460 and 615 < cursor_rect.y < 750):
-                        create_new_window()
+                        create_new_window(login, level_list, create_level_window, draw_multiline_text,
+                                          create_special_window)
                     elif (560 < cursor_rect.x < 605 and 305 < cursor_rect.y < 395 or
                           552 < cursor_rect.x < 630 and 395 < cursor_rect.y < 485):
                         # Код для открытия нового окна
-                        create_special_window()
+                        create_special_window(login, level_list, create_level_window, draw_multiline_text,
+                                              create_new_window)
 
                 cursor_rect.topleft = pygame.mouse.get_pos()
 
