@@ -400,6 +400,8 @@ def create_level_window(map_level, level):
     speed_bar = SpeedBar(max_speed=100, fill_time=7, drain_time=4, width=200, height=20, x=325, y=800)
     accelerating = False
 
+    global level_list
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -452,6 +454,7 @@ def create_level_window(map_level, level):
                 ''')
                 conn.commit()
                 conn.close()
+                level_list[int(level[-1]) - 1] = 1
             finih_window(win_text)
 
         for i in monster:
