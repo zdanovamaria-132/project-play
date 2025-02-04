@@ -331,6 +331,7 @@ def create_level_window(map_level, level, level_file):
     player, teleport_points, win_point, monster, l_point = generate_level(load_level(map_level))
     win_text = 'win'
     lose_text = "loss"
+    count_l = 0
 
     speed_bar = SpeedBar(max_speed=100, fill_time=7, drain_time=4, width=200, height=20, x=325, y=800)
     accelerating = False
@@ -345,7 +346,7 @@ def create_level_window(map_level, level, level_file):
             elif event.type == pygame.KEYDOWN:
                 if event.key in (
                         pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d, pygame.K_LEFT,
-                        pygame.K_a):
+                        pygame.K_a, pygame.K_t):
                     if event.key == pygame.K_UP or event.key == pygame.K_w:
                         player.update('up')
                     if event.key == pygame.K_DOWN or event.key == pygame.K_s:
@@ -354,6 +355,21 @@ def create_level_window(map_level, level, level_file):
                         player.update('right')
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                         player.update('left')
+                    if event.key == pygame.K_t:
+                        print('нажата t')
+                        if count_l != 5:
+                            start_time = pygame.time.get_ticks()
+                            for i in l_point:
+                                if ((i[0] * 50 >= player.rect.x - 200 and i[0] * 50 <= player.rect.x + 200)
+                                        and (i[1] * 50 >= player.rect.y - 200 and i[1] * 50 <= player.rect.y + 200)):
+                                    Tile('l', i[0], i[1], 'emptyl.png')
+                                else:
+                                    tile_file = f'empty{(i[0] + i[1]) % 10}.png'
+                                    Tile('empty', i[0], i[1], tile_file)
+                            count_l += 1
+                        else:
+                            print('лимит исчерпан')
+
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     if speed_bar.current_speed > 0:
                         accelerating = True
