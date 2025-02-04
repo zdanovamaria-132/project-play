@@ -614,6 +614,9 @@ class StartForm(QtWidgets.QWidget):  # окно авторизации
                     screen_s.blit(background_window1, (0, 0))
 
                 screen.blit(cursor, cursor_rect)
+                font = pygame.font.Font(None, 24)
+                text_surface = font.render('Наведите курсор на дорогу или домик', True, (255, 255, 255))
+                screen.blit(text_surface, (10, 10))
                 pygame.display.flip()
         pygame.quit()
         sys.exit()
