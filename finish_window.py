@@ -12,12 +12,12 @@ def finish_window(text, draw_multiline_text, login, level_list, create_level_win
     if text == 'win':
         text_result = ('''
           Поздравляем, вы успешно 
-           справились с заданием.
+            справились с заданием.
          Гильдия зачтет вам это задание.
         Пожалуйста хорошо отдохните и 
-            восстановите силы.
+                восстановите силы.
         А затем приходите за новым 
-                заданием.''')
+                    заданием.''')
         background_window = pygame.image.load('data/win.jpg')
         color = (0, 0, 0)
     elif text == 'loss_m':
