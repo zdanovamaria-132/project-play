@@ -18,23 +18,28 @@ def finish_window(text, draw_multiline_text, login, level_list, create_level_win
             восстановите силы.
         А затем приходите за новым 
                 заданием.''')
-        background_window = pygame.image.load('data/win_photo.jpeg')
-        color = (255, 255, 255)
+        background_window = pygame.image.load('data/win.jpg')
+        color = (0, 0, 0)
     elif text == 'loss_m':
         background_window = pygame.image.load('data/lose_background.jpeg')  # Используем правильное имя файла
         text_result = ('''
-        К сожалению, вы не справились с заданием.
-        Вы попали на монстра и ваших сил не хватило
-        победить его. К счастью, вы успели
-        воспользоваться свитком перемещения и 
-        переместиться в безопасное место.''')
+        К сожалению, 
+        вы не справились с заданием.
+        Вы попали на монстра и 
+        ваших сил не хватило победить его. 
+        К счастью, вы успели воспользоваться 
+        свитком перемещения и 
+        укрыться в безопасном месте.''')
         color = (255, 255, 255)
     elif text == 'loss_l':
         background_window = pygame.image.load('data/lose_background.jpeg')  # Используем правильное имя файла
         text_result = ('''
-        К сожалению, вы не справились с заданием.
-        Вы попали в ловушку. Вас спасли другие 
-                    члены гильдии. ''')
+            К сожалению, 
+          вы не справились 
+            с заданием.
+          Вы попали в ловушку. 
+          Вас спасли другие 
+             члены гильдии. ''')
         color = (255, 255, 255)
     cursor = pygame.image.load('data/cursor.png')
     cursor_rect = cursor.get_rect()
@@ -75,7 +80,7 @@ def finish_window(text, draw_multiline_text, login, level_list, create_level_win
 
         # Отображение текста
         font = pygame.font.Font(None, 36)
-        draw_multiline_text(text_result, 30, 150, font, color)
+        draw_multiline_text(text_result, 120, 200, font, color)
         new_screen.blit(button_image, back.topleft)
         new_screen.blit(button_image, finish.topleft)
 
