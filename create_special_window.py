@@ -10,7 +10,7 @@ text_ability = ('''Способности:
 
 def create_special_window(login, level_list, create_level_window, draw_multiline_text, create_new_window):
     special_screen = pygame.display.set_mode((750, 750))
-    pygame.display.set_caption("Специальное окно")
+    pygame.display.set_caption("Окно профиля")
     background_special = pygame.image.load('data/фон.jpg')
     cursor_image = pygame.image.load('data/cursor.png')
     avatar_image = pygame.image.load('data/аватарка.png')
@@ -32,11 +32,11 @@ def create_special_window(login, level_list, create_level_window, draw_multiline
     if row:
         score = row[0]
 
-    if score >= 700:
+    if score >= 400:
         text_rang = font.render('Ранг: A, мастер', True, (0, 0, 0))
-    elif score >= 500:
+    elif score >= 250:
         text_rang = font.render('Ранг: B, опытный', True, (0, 0, 0))
-    elif score >= 200:
+    elif score >= 100:
         text_rang = font.render('Ранг: C, продвинутый', True, (0, 0, 0))
     else:
         text_rang = font.render('Ранг: D, новичок', True, (0, 0, 0))

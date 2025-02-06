@@ -27,9 +27,9 @@ def create_new_window(login, level_list, create_level_window, draw_multiline_tex
     list_level_text = []
     for i in level_list:
         if i == 0:
-            list_level_text.append(font.render('Не пройден', True, (0, 0, 0)))
+            list_level_text.append(font.render('Не выполнено', True, (0, 0, 0)))
         elif i == 1:
-            list_level_text.append(font.render('Пройден', True, (0, 0, 0)))
+            list_level_text.append(font.render('Выполнено', True, (0, 0, 0)))
 
     list_button_rect = [pygame.Rect(500, 60, button_image.get_width(), button_image.get_height()),
                         pygame.Rect(500, 200, button_image.get_width(), button_image.get_height()),
