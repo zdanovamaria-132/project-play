@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import os
 from PyQt6 import QtWidgets, uic
 import sqlite3
 from PyQt6.QtGui import QPixmap
@@ -24,7 +25,6 @@ cursor = pygame.image.load('data/cursor.png')
 cursor_rect = cursor.get_rect()
 
 pygame.mouse.set_visible(False)
-
 
 tile_images = {
     'wall': load_images_from_folder('data/walls'),
@@ -63,7 +63,6 @@ empty_image = pygame.image.load('data/empty/empty.png')
 # Загрузка изображений empty1.png, empty2.png и т.д.
 empty_images = [pygame.image.load(f'data/empty/empty{i}.png') for i in range(1, 10)]
 empty_replacement_image = pygame.image.load('data/empty/empty.png')
-
 
 # Загрузка спрайтового листа
 sprite_sheet = pygame.image.load('data/sprite_sheet.png')
@@ -311,7 +310,6 @@ def generate_level(level):
     print(f"Монстр: {monster}")
     return new_player, teleport_points, win_point, monster, l_points
 
-
 def create_level_window(map_level, level, level_file):
     global levelg
     levelg = level_file
@@ -321,6 +319,16 @@ def create_level_window(map_level, level, level_file):
     cursor_rect = cursor.get_rect()
     pygame.mouse.set_visible(False)
     start_time = None
+
+    # Инициализация микшера Pygame
+    pygame.mixer.init()
+
+    # Загрузка случайного музыкального файла из папки music
+    music_folder = 'data/music'
+    music_files = [f for f in os.listdir(music_folder) if os.path.isfile(os.path.join(music_folder, f))]
+    random_music = random.choice(music_files)
+    pygame.mixer.music.load(os.path.join(music_folder, random_music))
+    pygame.mixer.music.play(-1)  # '-1' означает зацикливание музыки
 
     # Очистка всех групп спрайтов перед загрузкой нового уровня
     all_sprites.empty()
@@ -340,11 +348,12 @@ def create_level_window(map_level, level, level_file):
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.mixer.music.stop()  # Остановка музыки
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key in (
                         pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d, pygame.K_LEFT,
-                        pygame.K_a, pygame.K_t):
+                        pygame.K_a, pygame.K_t, pygame.K_v):
                     if event.key == pygame.K_UP or event.key == pygame.K_w:
                         player.update('up')
                     if event.key == pygame.K_DOWN or event.key == pygame.K_s:
@@ -372,6 +381,13 @@ def create_level_window(map_level, level, level_file):
                     if speed_bar.current_speed > 0:
                         accelerating = True
                         player.speed = 2
+
+                if event.key == pygame.K_v:
+                    if pygame.mixer.music.get_busy():
+                        pygame.mixer.music.stop()
+                    else:
+                        pygame.mixer.music.play(-1)
+
             elif event.type == pygame.KEYUP:
                 if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
                     accelerating = False
@@ -404,20 +420,20 @@ def create_level_window(map_level, level, level_file):
                 conn.commit()
                 conn.close()
                 level_list[int(level[-1]) - 1] = 1
-            finish_window('win', draw_multiline_text, login, level_list, create_level_window, create_new_window,
-                  create_special_window)
+            pygame.mixer.music.stop()  # Остановка музыки при победе
+            finish_window('win', draw_multiline_text, login, level_list, create_level_window, create_new_window, create_special_window)
 
         for i in monster:
             if i and player.rect.colliderect(i.rect):
                 print('вас убил монстр')
-                finish_window('loss_m', draw_multiline_text, login, level_list, create_level_window, create_new_window,
-                  create_special_window)
+                pygame.mixer.music.stop()  # Остановка музыки при поражении
+                finish_window('loss_m', draw_multiline_text, login, level_list, create_level_window, create_new_window, create_special_window)
 
         for i in l_point:
             if player.rect.colliderect(pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
                 print('вы попали в ловушку')
-                finish_window('loss_l', draw_multiline_text, login, level_list, create_level_window, create_new_window,
-                  create_special_window)
+                pygame.mixer.music.stop()  # Остановка музыки при попадании в ловушку
+                finish_window('loss_l', draw_multiline_text, login, level_list, create_level_window, create_new_window, create_special_window)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
@@ -439,11 +455,11 @@ def create_level_window(map_level, level, level_file):
 
         # Рисуем шкалу ускорения
         speed_bar.draw(new_screen)
-
         pygame.display.flip()
 
     pygame.quit()
     sys.exit()
+
 
 
 def draw_multiline_text(text, x, y, font, color):
