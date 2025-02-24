@@ -1,6 +1,7 @@
 import pygame
 import sys
 
+
 def finish_window(text, draw_multiline_text, login, level_list, create_level_window, create_new_window,
                   create_special_window):
     new_screen = pygame.display.set_mode((750, 750))
@@ -66,7 +67,8 @@ def finish_window(text, draw_multiline_text, login, level_list, create_level_win
                 running = False  # Устанавливаем флаг, что окно закрылось
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if back.collidepoint(event.pos):
-                    create_new_window(login, level_list, create_level_window, draw_multiline_text, create_special_window)
+                    create_new_window(login, level_list, create_level_window, draw_multiline_text,
+                                      create_special_window)
                 elif finish.collidepoint(event.pos):
                     # Завершение Pygame
                     pygame.quit()

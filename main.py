@@ -181,7 +181,8 @@ class Player(pygame.sprite.Sprite):
                             self.score += 1
                             conn = sqlite3.connect('data/project_play_bd.db')
                             cursor = conn.cursor()
-                            cursor.execute('UPDATE players SET score = score + 1 WHERE player = ?', (login,))
+                            cursor.execute('UPDATE players SET score = score + 1 WHERE player = ?',
+                                           (login,))
                             conn.commit()
                             conn.close()
 
@@ -310,6 +311,7 @@ def generate_level(level):
     print(f"Монстр: {monster}")
     return new_player, teleport_points, win_point, monster, l_points
 
+
 def create_level_window(map_level, level, level_file):
     global levelg
     levelg = level_file
@@ -328,7 +330,7 @@ def create_level_window(map_level, level, level_file):
     music_files = [f for f in os.listdir(music_folder) if os.path.isfile(os.path.join(music_folder, f))]
     random_music = random.choice(music_files)
     pygame.mixer.music.load(os.path.join(music_folder, random_music))
-    pygame.mixer.music.play(-1)  # '-1' означает зацикливание музыки
+    pygame.mixer.music.play(-1)
 
     # Очистка всех групп спрайтов перед загрузкой нового уровня
     all_sprites.empty()
@@ -421,19 +423,22 @@ def create_level_window(map_level, level, level_file):
                 conn.close()
                 level_list[int(level[-1]) - 1] = 1
             pygame.mixer.music.stop()  # Остановка музыки при победе
-            finish_window('win', draw_multiline_text, login, level_list, create_level_window, create_new_window, create_special_window)
+            finish_window('win', draw_multiline_text, login, level_list, create_level_window, create_new_window,
+                          create_special_window)
 
         for i in monster:
             if i and player.rect.colliderect(i.rect):
                 print('вас убил монстр')
                 pygame.mixer.music.stop()  # Остановка музыки при поражении
-                finish_window('loss_m', draw_multiline_text, login, level_list, create_level_window, create_new_window, create_special_window)
+                finish_window('loss_m', draw_multiline_text, login, level_list, create_level_window,
+                              create_new_window, create_special_window)
 
         for i in l_point:
             if player.rect.colliderect(pygame.Rect(i[0] * tile_width, i[1] * tile_height, tile_width, tile_height)):
                 print('вы попали в ловушку')
                 pygame.mixer.music.stop()  # Остановка музыки при попадании в ловушку
-                finish_window('loss_l', draw_multiline_text, login, level_list, create_level_window, create_new_window, create_special_window)
+                finish_window('loss_l', draw_multiline_text, login, level_list, create_level_window,
+                              create_new_window, create_special_window)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         new_screen.fill((200, 200, 200))
@@ -459,7 +464,6 @@ def create_level_window(map_level, level, level_file):
 
     pygame.quit()
     sys.exit()
-
 
 
 def draw_multiline_text(text, x, y, font, color):
@@ -629,7 +633,8 @@ class StartForm(QtWidgets.QWidget):  # окно авторизации
 
                 screen.blit(cursor, cursor_rect)
                 font = pygame.font.Font(None, 24)
-                text_surface = font.render('Наведите курсор на дорогу или домик', True, (255, 255, 255))
+                text_surface = font.render('Наведите курсор на дорогу или домик', True,
+                                           (255, 255, 255))
                 screen.blit(text_surface, (10, 10))
                 pygame.display.flip()
         pygame.quit()

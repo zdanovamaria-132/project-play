@@ -2,6 +2,7 @@ import pygame
 import sqlite3
 import sys
 
+
 def create_new_window(login, level_list, create_level_window, draw_multiline_text, create_special_window):
     new_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Выбор уровня")
@@ -81,7 +82,8 @@ def create_new_window(login, level_list, create_level_window, draw_multiline_tex
         for i in range(5):
             new_screen.blit(button_image, list_button_rect[i].topleft)
             new_screen.blit(list_level_text[i],
-                            (list_button_rect[i].x + (button_image.get_width() - list_level_text[i].get_width()) // 2,
+                            (list_button_rect[i].x + (button_image.get_width() -
+                                                      list_level_text[i].get_width()) // 2,
                              list_button_rect[i].y + (
                                      button_image.get_height() - list_level_text[i].get_height()) // 2))
         new_screen.blit(cursor, cursor_rect)

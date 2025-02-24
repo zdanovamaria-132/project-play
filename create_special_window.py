@@ -8,6 +8,7 @@ text_ability = ('''Способности:
                     самовостанавливается(клавиша SHIFT)
 3.Телепорация: фиолетовый телепорт кнопка Q, синий Е''')
 
+
 def create_special_window(login, level_list, create_level_window, draw_multiline_text, create_new_window):
     special_screen = pygame.display.set_mode((750, 750))
     pygame.display.set_caption("Окно профиля")
@@ -41,7 +42,6 @@ def create_special_window(login, level_list, create_level_window, draw_multiline
     else:
         text_rang = font.render('Ранг: D, новичок', True, (0, 0, 0))
 
-
     score_image = pygame.image.load('data/score_image.png')
 
     for i, status in enumerate(level_list, 1):
@@ -61,7 +61,8 @@ def create_special_window(login, level_list, create_level_window, draw_multiline
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if button_rect.collidepoint(event.pos):
-                    create_new_window(login, level_list, create_level_window, draw_multiline_text, create_special_window)
+                    create_new_window(login, level_list, create_level_window, draw_multiline_text,
+                                      create_special_window)
 
         cursor_rect.topleft = pygame.mouse.get_pos()
         special_screen.blit(background_special, (0, 0))
